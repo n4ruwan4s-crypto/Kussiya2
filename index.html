@@ -1,0 +1,636 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Kussiya — Homemade Lunch, Ordered Today</title>
+<meta name="description" content="Order a homemade rice &amp; curry lunch, delivered to your office.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600&family=Work+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --cream:#FBF6EC; --paper:#FFFDF8; --ink:#2C2118; --ink-soft:#5B4C3F;
+    --turmeric:#D69A2D; --turmeric-deep:#B57C1C; --paprika:#BC4430; --paprika-deep:#9B3624;
+    --leaf:#52734D; --line:#E4D5B7; --line-soft:#EFE4CC; --radius:14px;
+  }
+  *{box-sizing:border-box;}
+  body{margin:0; background:var(--cream); color:var(--ink); font-family:'Work Sans', sans-serif; line-height:1.5; -webkit-font-smoothing:antialiased;}
+  h1,h2,h3{font-family:'Fraunces', serif; margin:0; font-weight:600; letter-spacing:-0.01em;}
+  a{color:inherit;}
+  .wrap{max-width:560px; margin:0 auto; padding:0 20px 100px;}
+  [hidden]{display:none !important;}
+
+  .hero{background:linear-gradient(180deg, var(--paprika) 0%, var(--paprika-deep) 100%); color:#FBF2E8; padding:36px 20px 46px; border-bottom:4px solid var(--turmeric);}
+  .hero-inner{max-width:560px; margin:0 auto;}
+  .hero .eyebrow{font-size:14px; color:#F3D5B0; margin:0 0 6px;}
+  .hero h1{font-size:38px; line-height:1.05; color:#fff;}
+  .hero p.tagline{margin:10px 0 0; font-size:16px; color:#F6E3CE; max-width:34ch;}
+
+  .status-badge{margin-top:22px; background:rgba(0,0,0,0.18); border:1px solid rgba(255,255,255,0.18); border-radius:var(--radius); padding:14px 16px; display:flex; align-items:center; justify-content:space-between; gap:12px; flex-wrap:wrap;}
+  .status-badge .label{font-size:13px; color:#F3D5B0;}
+  .status-badge .state{font-size:16px; font-weight:600; margin-top:2px;}
+  .status-badge .clock{font-family:'Fraunces', serif; font-variant-numeric:tabular-nums; font-size:24px; color:#fff;}
+
+  main{margin-top:-22px;}
+  .ticket{background:var(--paper); border-radius:18px; box-shadow:0 12px 30px -18px rgba(44,33,24,0.35); border:1px solid var(--line-soft); overflow:hidden;}
+  .section{padding:26px 22px; border-bottom:1px dashed var(--line);}
+  .section:last-of-type{border-bottom:none;}
+  .section h2{font-size:19px; margin-bottom:4px;}
+  .section .hint{font-size:13.5px; color:var(--ink-soft); margin:0 0 16px;}
+  .step-no{display:inline-block; font-family:'Fraunces', serif; font-size:13px; color:var(--turmeric-deep); margin-bottom:6px;}
+
+  label.field-label{display:block; font-size:13.5px; font-weight:600; color:var(--ink); margin:14px 0 6px;}
+  label.field-label:first-of-type{margin-top:0;}
+  input[type=text], input[type=tel], input[type=date]{width:100%; padding:12px 14px; font-size:16px; font-family:inherit; border:1.5px solid var(--line); border-radius:10px; background:#fff; color:var(--ink);}
+  input:focus-visible{outline:2.5px solid var(--turmeric-deep); outline-offset:2px;}
+  .field-error{color:var(--paprika-deep); font-size:12.5px; margin-top:5px; display:none;}
+  .invalid{border-color:var(--paprika) !important;}
+  .invalid + .field-error{display:block;}
+
+  .rice-grid{display:flex; gap:10px; flex-wrap:wrap;}
+  .chip{position:relative;}
+  .chip input{position:absolute; opacity:0; width:1px; height:1px;}
+  .chip span{display:flex; align-items:center; gap:9px; padding:11px 16px; border:1.5px solid var(--line); border-radius:999px; font-size:15px; cursor:pointer; background:#fff; color:var(--ink-soft); transition:border-color .15s, background .15s, color .15s;}
+  .chip input:checked + span{border-color:var(--turmeric-deep); background:#FBF0DA; color:var(--ink); font-weight:600;}
+  .rice-dot{width:14px; height:14px; border-radius:50%; border:1px solid rgba(0,0,0,0.15); flex:none;}
+  .chip-price{color:var(--turmeric-deep); font-weight:600; font-size:13.5px;}
+
+  .curry-list{display:flex; flex-direction:column; gap:8px;}
+  .curry-row{position:relative;}
+  .curry-row input{position:absolute; opacity:0; width:1px; height:1px;}
+  .curry-box{display:flex; align-items:center; justify-content:space-between; gap:10px; padding:12px 14px; border:1.5px solid var(--line); border-radius:10px; background:#fff; cursor:pointer;}
+  .curry-row input:checked ~ .curry-box{border-color:var(--leaf); background:#F3F6EF;}
+  .curry-name{font-size:15px; display:flex; align-items:center; gap:9px; flex-wrap:wrap;}
+  .curry-right{display:flex; align-items:center; gap:10px;}
+  .curry-price{font-size:13.5px; font-weight:600; color:var(--leaf);}
+  .curry-check{width:19px; height:19px; border-radius:6px; border:1.5px solid var(--line); flex:none; display:flex; align-items:center; justify-content:center; background:#fff;}
+  .curry-row input:checked ~ .curry-box .curry-check{background:var(--leaf); border-color:var(--leaf);}
+  .curry-row input:checked ~ .curry-box .curry-check::after{content:"✓"; color:#fff; font-size:13px;}
+  .tag{font-size:11px; padding:3px 8px; border-radius:999px; font-weight:600; letter-spacing:.02em;}
+  .tag.meat{background:#F7E4DE; color:var(--paprika-deep);}
+  .tag.veg{background:#E7EFE3; color:var(--leaf);}
+  .empty-note{font-size:14px; color:var(--ink-soft); font-style:italic;}
+
+  .pm-row{position:relative;}
+  .pm-row input{position:absolute; opacity:0; width:1px; height:1px;}
+  .pm-box{display:flex; align-items:center; justify-content:space-between; gap:10px; padding:12px 14px; border:1.5px solid var(--line); border-radius:10px; background:#fff; cursor:pointer;}
+  .pm-row input:checked ~ .pm-box{border-color:var(--leaf); background:#F3F6EF;}
+  .pm-name{font-size:15px; font-weight:500;}
+  .pm-check{width:19px; height:19px; border-radius:50%; border:1.5px solid var(--line); flex:none; display:flex; align-items:center; justify-content:center; background:#fff;}
+  .pm-row input:checked ~ .pm-box .pm-check{border-color:var(--leaf);}
+  .pm-row input:checked ~ .pm-box .pm-check::after{content:""; width:9px; height:9px; border-radius:50%; background:var(--leaf);}
+  .payment-details{margin-top:14px; background:#FBF0DA; border:1px solid #EEDBAF; border-radius:10px; padding:14px 16px; font-size:14px; color:var(--ink);}
+  .payment-details p{margin:0 0 8px;}
+  .payment-details .pd-row{display:flex; justify-content:space-between; gap:12px; padding:5px 0; font-size:13.5px; border-bottom:1px dashed #E7D3A4;}
+  .payment-details .pd-row:last-of-type{border-bottom:none;}
+  .payment-details .pd-row span:first-child{color:var(--turmeric-deep); font-weight:600;}
+  .payment-details img.pd-qr{max-width:160px; display:block; margin-top:10px; border-radius:8px; border:1px solid var(--line);}
+
+  .total-bar{position:sticky; bottom:0; left:0; right:0; background:var(--ink); color:#fff; padding:14px 22px; display:flex; align-items:center; justify-content:space-between; border-top:3px solid var(--turmeric);}
+  .total-bar .label{font-size:13px; color:#E9D9BE;}
+  .total-bar .amount{font-family:'Fraunces', serif; font-size:22px;}
+
+  .submit-row{padding:22px;}
+  button.submit{width:100%; padding:15px 18px; font-size:16.5px; font-weight:600; font-family:inherit; background:var(--paprika); color:#fff; border:none; border-radius:12px; cursor:pointer; transition:background .15s, transform .05s;}
+  button.submit:hover{background:var(--paprika-deep);}
+  button.submit:active{transform:scale(0.99);}
+  button.submit:disabled{background:#CBB79A; cursor:not-allowed;}
+  .submit-note{font-size:12.5px; color:var(--ink-soft); text-align:center; margin-top:10px;}
+
+  .closed-card{background:var(--paper); border-radius:18px; padding:34px 26px; text-align:center; border:1px solid var(--line-soft); box-shadow:0 12px 30px -18px rgba(44,33,24,0.35);}
+  .closed-card h2{font-size:22px; margin-bottom:8px;}
+  .closed-card p{color:var(--ink-soft); font-size:15px; margin:0 0 18px;}
+  .closed-clock{font-family:'Fraunces', serif; font-size:34px; color:var(--paprika-deep); font-variant-numeric:tabular-nums;}
+
+  .confirm-card{background:var(--paper); border-radius:18px; padding:30px 24px; border:1px solid var(--line-soft); box-shadow:0 12px 30px -18px rgba(44,33,24,0.35);}
+  .confirm-card h2{font-size:22px; color:var(--leaf); margin-bottom:2px;}
+  .confirm-order-id{font-family:'Fraunces', serif; font-size:15px; color:var(--turmeric-deep); margin:0 0 16px;}
+  .confirm-card p.lede{color:var(--ink-soft); font-size:14.5px; margin:0 0 18px;}
+  .confirm-list{list-style:none; padding:0; margin:0 0 20px; border-top:1px dashed var(--line);}
+  .confirm-list li{display:flex; justify-content:space-between; gap:14px; padding:10px 0; border-bottom:1px dashed var(--line); font-size:14.5px;}
+  .confirm-list li span:first-child{color:var(--ink-soft);}
+  .confirm-list li span:last-child{font-weight:600; text-align:right;}
+  .confirm-list li.total-line span{color:var(--ink); font-size:16px;}
+  .confirm-note{background:#FBF0DA; border:1px solid #EEDBAF; border-radius:10px; padding:12px 14px; font-size:13.5px; color:var(--turmeric-deep); margin-bottom:18px;}
+  .email-status{font-size:13px; margin-bottom:18px; padding:10px 12px; border-radius:9px;}
+  .email-status.ok{background:#E7EFE3; color:var(--leaf);}
+  .email-status.fail{background:#F7E4DE; color:var(--paprika-deep);}
+  .btn-secondary{display:inline-block; width:100%; text-align:center; padding:13px; border-radius:12px; border:1.5px solid var(--line); background:#fff; color:var(--ink); font-weight:600; font-size:15px; cursor:pointer; font-family:inherit;}
+
+  .conn-note{text-align:center; font-size:12.5px; color:var(--ink-soft); padding:14px 20px 0;}
+  footer{text-align:center; padding:26px 20px 10px; font-size:12.5px; color:var(--ink-soft);}
+  footer a{text-decoration:underline;}
+
+  @media (max-width:400px){ .hero h1{font-size:32px;} .status-badge .clock{font-size:20px;} }
+</style>
+</head>
+<body>
+
+<header class="hero">
+  <div class="hero-inner">
+    <p class="eyebrow">Homemade lunch, made to order</p>
+    <h1>Kussiya</h1>
+    <p class="tagline">Real rice &amp; curry, cooked at home this morning, delivered to your office by lunch.</p>
+    <div class="status-badge" id="statusBadge">
+      <div>
+        <div class="label" id="statusLabel">Connecting…</div>
+        <div class="state" id="statusState">—</div>
+      </div>
+      <div class="clock" id="statusClock">--:--:--</div>
+    </div>
+  </div>
+</header>
+
+<main class="wrap">
+  <p class="conn-note" id="connNote" hidden>Can't reach the kitchen's menu right now — check your connection and reload.</p>
+
+  <form class="ticket" id="orderForm" hidden novalidate>
+    <div class="section">
+      <span class="step-no">Step 1</span>
+      <h2>Your details</h2>
+      <p class="hint">So we know who to cook for and where to bring it.</p>
+      <label class="field-label" for="custName">Full name</label>
+      <input type="text" id="custName" name="custName" autocomplete="name" placeholder="e.g. Ruwan Sampath">
+      <p class="field-error">Please enter your name.</p>
+      <label class="field-label" for="custPhone">Phone number</label>
+      <input type="tel" id="custPhone" name="custPhone" autocomplete="tel" placeholder="e.g. 077 123 4567" inputmode="tel">
+      <p class="field-error">Please enter a valid phone number.</p>
+      <label class="field-label" for="custAddress">Delivery address — office building</label>
+      <input type="text" id="custAddress" name="custAddress" autocomplete="street-address" placeholder="Building name, floor &amp; department">
+      <p class="field-error">Please enter your office building &amp; floor.</p>
+    </div>
+
+    <div class="section">
+      <span class="step-no">Step 2</span>
+      <h2>Choose your rice</h2>
+      <p class="hint">Pick one.</p>
+      <div class="rice-grid" id="riceGrid"></div>
+      <p class="field-error" id="riceError">Please choose a rice type.</p>
+    </div>
+
+    <div class="section">
+      <span class="step-no">Step 3</span>
+      <h2>Choose your curries</h2>
+      <p class="hint">Pick as many as you like.</p>
+      <div class="curry-list" id="curryList"></div>
+      <p class="field-error" id="curryError">Please choose at least one curry.</p>
+    </div>
+
+    <div class="section">
+      <span class="step-no">Step 4</span>
+      <h2>Delivery date</h2>
+      <p class="hint">Today, or pick a later date to schedule ahead.</p>
+      <input type="date" id="deliveryDate" name="deliveryDate">
+      <p class="field-error">Please choose a delivery date.</p>
+    </div>
+
+    <div class="section">
+      <span class="step-no">Step 5</span>
+      <h2>Payment method</h2>
+      <p class="hint">Choose how you'd like to pay.</p>
+      <div class="curry-list" id="paymentList"></div>
+      <p class="field-error" id="paymentError">Please choose a payment method.</p>
+      <div class="payment-details" id="paymentDetails" hidden></div>
+    </div>
+
+    <div class="total-bar">
+      <span class="label">Order total</span>
+      <span class="amount" id="totalAmount">Rs. 0</span>
+    </div>
+
+    <div class="submit-row">
+      <button type="submit" class="submit" id="submitBtn">Place order</button>
+      <p class="submit-note">Your order goes straight to our kitchen — no email app needed.</p>
+    </div>
+  </form>
+
+  <div class="closed-card" id="closedCard" hidden>
+    <h2 id="closedTitle">Ordering is closed for now</h2>
+    <p id="closedSub">We take orders every day between the times set by our kitchen.</p>
+    <div class="closed-clock" id="closedClock">--:--:--</div>
+  </div>
+
+  <div class="confirm-card" id="confirmCard" hidden>
+    <h2>Order placed 🍛</h2>
+    <p class="confirm-order-id" id="confirmOrderId"></p>
+    <p class="lede">Your order has been sent to our kitchen.</p>
+    <div class="email-status" id="emailStatus"></div>
+    <ul class="confirm-list" id="confirmList"></ul>
+    <div class="confirm-note" id="processingNote"></div>
+    <button class="btn-secondary" id="newOrderBtn" type="button">Place another order</button>
+  </div>
+</main>
+
+<footer>Cooked fresh, ordered simply. &middot; <a href="admin.html">Kitchen admin</a></footer>
+
+<script src="config.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
+<script>
+(function(){
+  "use strict";
+
+  function isPlaceholder(v){ return typeof v !== "string" || v.indexOf("YOUR_") === 0; }
+
+  var db = null;
+  try{
+    if(typeof firebaseConfig === "undefined" || Object.keys(firebaseConfig).some(function(k){ return isPlaceholder(firebaseConfig[k]); })){
+      document.getElementById("connNote").hidden = false;
+      document.getElementById("connNote").textContent = "This page isn't fully set up yet (config.js still has placeholder values) — please check back soon.";
+    } else if(typeof firebase === "undefined"){
+      document.getElementById("connNote").hidden = false;
+      document.getElementById("connNote").textContent = "Couldn't load required scripts — check your internet connection and reload.";
+    } else {
+      firebase.initializeApp(firebaseConfig);
+      db = firebase.firestore();
+    }
+  }catch(e){
+    console.error(e);
+    document.getElementById("connNote").hidden = false;
+    document.getElementById("connNote").textContent = "Something's misconfigured on this page — please check back soon.";
+  }
+
+  if (db && window.emailjs && !isPlaceholder(EMAILJS_PUBLIC_KEY)) {
+    emailjs.init({ publicKey: EMAILJS_PUBLIC_KEY });
+  }
+
+  var DEFAULT_RICE = [
+    {id:"r-white", name:"White rice", hex:"#FFFDF6", price:90, active:true},
+    {id:"r-red",   name:"Red rice",   hex:"#8C3A2B", price:100, active:true},
+    {id:"r-yellow",name:"Yellow rice",hex:"#D69A2D", price:100, active:true}
+  ];
+  var DEFAULT_CURRIES = [
+    {id:"c-dhal",      name:"Dhal curry",      hasMeat:false, price:80,  active:true},
+    {id:"c-jackfruit", name:"Jackfruit curry", hasMeat:false, price:90,  active:true},
+    {id:"c-chicken",   name:"Chicken curry",   hasMeat:true,  price:180, active:true},
+    {id:"c-fish",      name:"Fish curry",      hasMeat:true,  price:160, active:true}
+  ];
+  var DEFAULT_SETTINGS = {
+    openTime:"06:00", closeTime:"10:30",
+    processingText:"Your lunch will be cooked fresh and delivered to your office before 12:30 PM.",
+    adminPassword:"kussiya2026"
+  };
+  var DEFAULT_PAYMENT_METHODS = [
+    {id:"cod",          label:"Cash on delivery",          active:true,  instructions:"Pay cash to the delivery person when your order arrives.", accountName:"", accountNumber:"", bankName:"", branch:"", qrImageUrl:""},
+    {id:"card_delivery",label:"Card on delivery",          active:false, instructions:"Pay by card using our delivery rider's card machine.", accountName:"", accountNumber:"", bankName:"", branch:"", qrImageUrl:""},
+    {id:"bank_delivery",label:"Bank transfer on delivery", active:true,  instructions:"Transfer the total to our account when your order arrives, then show the receipt to the rider.", accountName:"", accountNumber:"", bankName:"", branch:"", qrImageUrl:""},
+    {id:"qr_delivery",  label:"QR payment on delivery",    active:true,  instructions:"Scan our QR code and pay when your order arrives.", accountName:"", accountNumber:"", bankName:"", branch:"", qrImageUrl:""},
+    {id:"bank_transfer",label:"Bank transfer",             active:true,  instructions:"Transfer the total to our account before your order is prepared, then place your order.", accountName:"", accountNumber:"", bankName:"", branch:"", qrImageUrl:""},
+    {id:"card_payment", label:"Card payment",              active:false, instructions:"Online card payment is coming soon — please choose another payment method for now.", accountName:"", accountNumber:"", bankName:"", branch:"", qrImageUrl:""}
+  ];
+
+  var state = { rice: DEFAULT_RICE, curries: DEFAULT_CURRIES, settings: DEFAULT_SETTINGS, payment: DEFAULT_PAYMENT_METHODS, ready:false };
+
+  function escapeHtml(str){
+    return String(str).replace(/[&<>"']/g, function(ch){ return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[ch]; });
+  }
+  function money(n){ return "Rs. " + Number(n||0).toLocaleString(); }
+  function pad(n){ return String(n).padStart(2,"0"); }
+  function todayStr(d){ d = d || new Date(); return d.getFullYear()+"-"+pad(d.getMonth()+1)+"-"+pad(d.getDate()); }
+  function parseTimeToday(hhmm, base){ var p = hhmm.split(":").map(Number); var d = new Date(base); d.setHours(p[0], p[1]||0, 0, 0); return d; }
+  function fmtDuration(ms){ if(ms<0) ms=0; var t=Math.floor(ms/1000); return pad(Math.floor(t/3600))+":"+pad(Math.floor((t%3600)/60))+":"+pad(t%60); }
+
+  var els = {
+    badge: document.getElementById("statusBadge"), label: document.getElementById("statusLabel"),
+    state: document.getElementById("statusState"), clock: document.getElementById("statusClock"),
+    form: document.getElementById("orderForm"), closedCard: document.getElementById("closedCard"),
+    closedTitle: document.getElementById("closedTitle"), closedSub: document.getElementById("closedSub"),
+    closedClock: document.getElementById("closedClock"), confirmCard: document.getElementById("confirmCard"),
+    riceGrid: document.getElementById("riceGrid"), curryList: document.getElementById("curryList"),
+    deliveryDate: document.getElementById("deliveryDate"), riceError: document.getElementById("riceError"),
+    totalAmount: document.getElementById("totalAmount"), connNote: document.getElementById("connNote"),
+    paymentList: document.getElementById("paymentList"), paymentDetails: document.getElementById("paymentDetails")
+  };
+
+  /* ---------- Ensure Firestore has defaults on first run ---------- */
+  function ensureDoc(ref, data){
+    return ref.get().then(function(snap){
+      if(!snap.exists){ return ref.set(data); }
+    });
+  }
+  if(db){
+    ensureDoc(db.collection("menu").doc("rice"), {items: DEFAULT_RICE});
+    ensureDoc(db.collection("menu").doc("curries"), {items: DEFAULT_CURRIES});
+    ensureDoc(db.collection("settings").doc("main"), DEFAULT_SETTINGS);
+    ensureDoc(db.collection("settings").doc("payment"), {methods: DEFAULT_PAYMENT_METHODS});
+  }
+
+  /* ---------- Live listeners ---------- */
+  var gotRice = false, gotCurries = false, gotSettings = false, gotPayment = false;
+  function markReady(){
+    if(gotRice && gotCurries && gotSettings && gotPayment && !state.ready){
+      state.ready = true;
+      renderRice(); renderCurries(); renderPayment(); tick();
+      tickTimer = setInterval(tick, 1000);
+    }
+  }
+
+  function showConnError(err){
+    els.connNote.hidden = false;
+    if(err && err.code === "permission-denied"){
+      els.connNote.textContent = "Can't load the menu — Firestore permission denied. The kitchen needs to check its security rules.";
+    } else {
+      els.connNote.textContent = "Can't reach the kitchen's menu right now — check your connection and reload.";
+    }
+    console.error(err);
+  }
+
+  if(db){
+    db.collection("menu").doc("rice").onSnapshot(function(snap){
+      state.rice = (snap.exists && snap.data().items) ? snap.data().items : DEFAULT_RICE;
+      gotRice = true;
+      if(state.ready) renderRice();
+      markReady();
+    }, showConnError);
+
+    db.collection("menu").doc("curries").onSnapshot(function(snap){
+      state.curries = (snap.exists && snap.data().items) ? snap.data().items : DEFAULT_CURRIES;
+      gotCurries = true;
+      if(state.ready) renderCurries();
+      markReady();
+    }, showConnError);
+
+    db.collection("settings").doc("main").onSnapshot(function(snap){
+      state.settings = snap.exists ? Object.assign({}, DEFAULT_SETTINGS, snap.data()) : DEFAULT_SETTINGS;
+      gotSettings = true;
+      markReady();
+    }, showConnError);
+
+    db.collection("settings").doc("payment").onSnapshot(function(snap){
+      state.payment = (snap.exists && snap.data().methods) ? snap.data().methods : DEFAULT_PAYMENT_METHODS;
+      gotPayment = true;
+      if(state.ready) renderPayment();
+      markReady();
+    }, showConnError);
+  }
+
+  /* ---------- Countdown & window state ---------- */
+  var tickTimer = null;
+  function getWindowState(){
+    var s = state.settings; var now = new Date();
+    var openToday = parseTimeToday(s.openTime, now);
+    var closeToday = parseTimeToday(s.closeTime, now);
+    if(now < openToday) return {state:"before", target:openToday};
+    if(now > closeToday){ var t=new Date(openToday); t.setDate(t.getDate()+1); return {state:"after", target:t}; }
+    return {state:"open", target:closeToday};
+  }
+
+  function tick(){
+    var info = getWindowState(); var now = new Date(); var remaining = info.target - now;
+    if(info.state === "open"){
+      els.label.textContent = "Ordering is open";
+      els.state.textContent = "Closes at " + state.settings.closeTime;
+      els.clock.textContent = fmtDuration(remaining);
+      els.form.hidden = false; els.closedCard.hidden = true;
+      els.deliveryDate.min = todayStr();
+      if(!els.deliveryDate.value) els.deliveryDate.value = todayStr();
+    } else {
+      els.form.hidden = true;
+      if(!els.confirmCard.hidden) return;
+      els.closedCard.hidden = false;
+      if(info.state === "before"){
+        els.label.textContent = "Kitchen opens today at " + state.settings.openTime;
+        els.state.textContent = "Not open yet";
+        els.closedTitle.textContent = "Kitchen opens soon";
+        els.closedSub.textContent = "We start taking orders at " + state.settings.openTime + ". Come back then.";
+      } else {
+        els.label.textContent = "Closed for today";
+        els.state.textContent = "Reopens tomorrow, " + state.settings.openTime;
+        els.closedTitle.textContent = "Ordering closed for today";
+        els.closedSub.textContent = "Today's cutoff (" + state.settings.closeTime + ") has passed. We reopen tomorrow at " + state.settings.openTime + ".";
+      }
+      els.clock.textContent = fmtDuration(remaining);
+      els.closedClock.textContent = fmtDuration(remaining);
+    }
+  }
+
+  /* ---------- Rendering ---------- */
+  function renderRice(){
+    var rice = state.rice.filter(function(r){ return r.active !== false; });
+    var currentChecked = document.querySelector('input[name="rice"]:checked');
+    var currentVal = currentChecked ? currentChecked.value : null;
+    els.riceGrid.innerHTML = "";
+    if(rice.length === 0){ els.riceGrid.innerHTML = '<p class="empty-note">No rice options available right now.</p>'; return; }
+    rice.forEach(function(r){
+      var wrap = document.createElement("label");
+      wrap.className = "chip";
+      wrap.innerHTML = '<input type="radio" name="rice" value="'+r.id+'" '+(r.id===currentVal?"checked":"")+'>' +
+        '<span><span class="rice-dot" style="background:'+r.hex+'"></span>'+escapeHtml(r.name)+' <span class="chip-price">'+money(r.price)+'</span></span>';
+      els.riceGrid.appendChild(wrap);
+    });
+    els.riceGrid.querySelectorAll("input").forEach(function(i){ i.addEventListener("change", updateTotal); });
+    updateTotal();
+  }
+
+  function renderCurries(){
+    var curries = state.curries.filter(function(c){ return c.active !== false; });
+    var checkedIds = Array.prototype.map.call(document.querySelectorAll('input[name="curry"]:checked'), function(el){ return el.value; });
+    els.curryList.innerHTML = "";
+    if(curries.length === 0){ els.curryList.innerHTML = '<p class="empty-note">No curries available right now.</p>'; return; }
+    curries.forEach(function(c){
+      var row = document.createElement("label");
+      row.className = "curry-row";
+      row.innerHTML = '<input type="checkbox" name="curry" value="'+c.id+'" '+(checkedIds.indexOf(c.id)>-1?"checked":"")+'>' +
+        '<span class="curry-box"><span class="curry-name">'+escapeHtml(c.name)+
+        ' <span class="tag '+(c.hasMeat?"meat":"veg")+'">'+(c.hasMeat?"Contains meat":"Veg")+'</span></span>' +
+        '<span class="curry-right"><span class="curry-price">'+money(c.price)+'</span><span class="curry-check"></span></span></span>';
+      els.curryList.appendChild(row);
+    });
+    els.curryList.querySelectorAll("input").forEach(function(i){ i.addEventListener("change", updateTotal); });
+    updateTotal();
+  }
+
+  function renderPayment(){
+    var methods = state.payment.filter(function(m){ return m.active !== false; });
+    var currentChecked = document.querySelector('input[name="payment"]:checked');
+    var currentVal = currentChecked ? currentChecked.value : null;
+    els.paymentList.innerHTML = "";
+    if(methods.length === 0){
+      els.paymentList.innerHTML = '<p class="empty-note">No payment methods available right now — please call us to arrange payment.</p>';
+      els.paymentDetails.hidden = true;
+      return;
+    }
+    methods.forEach(function(m){
+      var row = document.createElement("label");
+      row.className = "pm-row";
+      row.innerHTML = '<input type="radio" name="payment" value="'+m.id+'" '+(m.id===currentVal?"checked":"")+'>' +
+        '<span class="pm-box"><span class="pm-name">'+escapeHtml(m.label)+'</span><span class="pm-check"></span></span>';
+      els.paymentList.appendChild(row);
+    });
+    els.paymentList.querySelectorAll("input").forEach(function(i){
+      i.addEventListener("change", function(){ showPaymentDetails(i.value); document.getElementById("paymentError").style.display = "none"; });
+    });
+    if(currentVal && methods.some(function(m){ return m.id === currentVal; })){ showPaymentDetails(currentVal); }
+    else { els.paymentDetails.hidden = true; }
+  }
+
+  function showPaymentDetails(methodId){
+    var m = state.payment.find(function(x){ return x.id === methodId; });
+    if(!m){ els.paymentDetails.hidden = true; return; }
+    var html = "";
+    if(m.instructions) html += "<p>"+escapeHtml(m.instructions)+"</p>";
+    var rows = [["Bank", m.bankName],["Branch", m.branch],["Account name", m.accountName],["Account number", m.accountNumber]];
+    rows.forEach(function(pair){
+      if(pair[1]) html += '<div class="pd-row"><span>'+escapeHtml(pair[0])+'</span><span>'+escapeHtml(pair[1])+'</span></div>';
+    });
+    if(m.qrImageUrl) html += '<img class="pd-qr" src="'+escapeHtml(m.qrImageUrl)+'" alt="Payment QR code">';
+    els.paymentDetails.innerHTML = html;
+    els.paymentDetails.hidden = html.length === 0;
+  }
+
+  function updateTotal(){
+    var total = 0;
+    var riceChecked = document.querySelector('input[name="rice"]:checked');
+    if(riceChecked){ var r = state.rice.find(function(x){ return x.id === riceChecked.value; }); if(r) total += Number(r.price||0); }
+    document.querySelectorAll('input[name="curry"]:checked').forEach(function(el){
+      var c = state.curries.find(function(x){ return x.id === el.value; }); if(c) total += Number(c.price||0);
+    });
+    els.totalAmount.textContent = money(total);
+  }
+
+  /* ---------- Validation ---------- */
+  function validateForm(){
+    var valid = true;
+    var name = document.getElementById("custName"), phone = document.getElementById("custPhone"),
+        address = document.getElementById("custAddress"), date = document.getElementById("deliveryDate");
+    [[name, name.value.trim().length>0],[phone, /^[0-9+\s\-()]{7,15}$/.test(phone.value.trim())],
+     [address, address.value.trim().length>0],[date, !!date.value]].forEach(function(pair){
+      if(pair[1]){ pair[0].classList.remove("invalid"); } else { pair[0].classList.add("invalid"); valid = false; }
+    });
+    var riceChosen = document.querySelector('input[name="rice"]:checked');
+    els.riceError.style.display = riceChosen ? "none" : "block";
+    if(!riceChosen) valid = false;
+    var curryChosen = document.querySelectorAll('input[name="curry"]:checked').length > 0;
+    document.getElementById("curryError").style.display = curryChosen ? "none" : "block";
+    if(!curryChosen) valid = false;
+    var paymentChosen = document.querySelector('input[name="payment"]:checked');
+    document.getElementById("paymentError").style.display = paymentChosen ? "none" : "block";
+    if(!paymentChosen) valid = false;
+    return valid;
+  }
+
+  /* ---------- Order number (atomic, collision-free) ---------- */
+  function generateOrderNumber(){
+    var dateKey = todayStr();
+    var counterRef = db.collection("counters").doc(dateKey);
+    return db.runTransaction(function(t){
+      return t.get(counterRef).then(function(doc){
+        var current = doc.exists ? (doc.data().count || 0) : 0;
+        var next = current + 1;
+        t.set(counterRef, {count: next});
+        return "KUS-" + dateKey.replace(/-/g,"") + "-" + String(next).padStart(4,"0");
+      });
+    });
+  }
+
+  /* ---------- Submit ---------- */
+  var submitting = false;
+  els.form.addEventListener("submit", function(e){
+    e.preventDefault();
+    if(submitting) return;
+    if(!validateForm()) return;
+    submitting = true;
+    document.getElementById("submitBtn").disabled = true;
+    document.getElementById("submitBtn").textContent = "Placing order…";
+
+    var riceId = document.querySelector('input[name="rice"]:checked').value;
+    var riceObj = state.rice.find(function(r){ return r.id === riceId; });
+    var curryIds = Array.prototype.map.call(document.querySelectorAll('input[name="curry"]:checked'), function(el){ return el.value; });
+    var curryObjs = curryIds.map(function(id){ return state.curries.find(function(c){ return c.id === id; }); }).filter(Boolean);
+    var total = (riceObj ? Number(riceObj.price||0) : 0) + curryObjs.reduce(function(s,c){ return s + Number(c.price||0); }, 0);
+    var paymentId = document.querySelector('input[name="payment"]:checked').value;
+    var paymentObj = state.payment.find(function(p){ return p.id === paymentId; }) || {id:paymentId, label:paymentId};
+
+    generateOrderNumber().then(function(orderId){
+      var order = {
+        id: orderId,
+        name: document.getElementById("custName").value.trim(),
+        phone: document.getElementById("custPhone").value.trim(),
+        address: document.getElementById("custAddress").value.trim(),
+        rice: riceObj ? riceObj.name : riceId,
+        ricePrice: riceObj ? riceObj.price : 0,
+        curries: curryObjs.map(function(c){ return {name:c.name, price:c.price}; }),
+        total: total,
+        deliveryDate: document.getElementById("deliveryDate").value,
+        placedAt: new Date().toISOString(),
+        status: "Pending",
+        payment: {
+          id: paymentObj.id, label: paymentObj.label,
+          instructions: paymentObj.instructions || "",
+          bankName: paymentObj.bankName || "", branch: paymentObj.branch || "",
+          accountName: paymentObj.accountName || "", accountNumber: paymentObj.accountNumber || ""
+        },
+        paymentStatus: "Unpaid"
+      };
+      return db.collection("orders").doc(orderId).set(order).then(function(){ return order; });
+    }).then(function(order){
+      sendOrderEmail(order);
+      showConfirmation(order);
+    }).catch(function(err){
+      console.error(err);
+      alert("Sorry, we couldn't place your order — please check your connection and try again.");
+    }).finally(function(){
+      submitting = false;
+      document.getElementById("submitBtn").disabled = false;
+      document.getElementById("submitBtn").textContent = "Place order";
+    });
+  });
+
+  function sendOrderEmail(order){
+    var statusEl = document.getElementById("emailStatus");
+    if(!window.emailjs || EMAILJS_PUBLIC_KEY.indexOf("YOUR_") === 0){
+      statusEl.className = "email-status fail";
+      statusEl.textContent = "Kitchen notification isn't configured yet — the order is saved, but please also call to confirm.";
+      return;
+    }
+    var params = {
+      order_id: order.id, customer_name: order.name, phone: order.phone, address: order.address,
+      rice: order.rice, curries: order.curries.map(function(c){ return c.name; }).join(", "),
+      delivery_date: order.deliveryDate, total: money(order.total),
+      placed_at: new Date(order.placedAt).toLocaleString(),
+      payment_method: order.payment ? order.payment.label : ""
+    };
+    emailjs.send(EMAILJS_SERVICE_ID, EMAILJS_TEMPLATE_ID, params).then(function(){
+      statusEl.className = "email-status ok";
+      statusEl.textContent = "Our kitchen has been notified.";
+    }).catch(function(err){
+      console.error(err);
+      statusEl.className = "email-status fail";
+      statusEl.textContent = "Order saved, but the kitchen notification didn't send — it'll still show up in the admin orders list.";
+    });
+  }
+
+  function showConfirmation(order){
+    els.form.hidden = true; els.closedCard.hidden = true; els.confirmCard.hidden = false;
+    document.getElementById("confirmOrderId").textContent = "Order " + order.id;
+    var list = document.getElementById("confirmList");
+    list.innerHTML = "";
+    [["Name", order.name],["Phone", order.phone],["Address", order.address],
+     ["Rice", order.rice + " · " + money(order.ricePrice)],
+     ["Curries", order.curries.map(function(c){ return c.name+" ("+money(c.price)+")"; }).join(", ")],
+     ["Delivery date", order.deliveryDate],
+     ["Payment method", order.payment ? order.payment.label : ""]].forEach(function(pair){
+      var li = document.createElement("li");
+      li.innerHTML = "<span>"+escapeHtml(pair[0])+"</span><span>"+escapeHtml(pair[1])+"</span>";
+      list.appendChild(li);
+    });
+    var totalLi = document.createElement("li");
+    totalLi.className = "total-line";
+    totalLi.innerHTML = "<span>Total</span><span>"+money(order.total)+"</span>";
+    list.appendChild(totalLi);
+    document.getElementById("processingNote").textContent = state.settings.processingText || DEFAULT_SETTINGS.processingText;
+  }
+
+  document.getElementById("newOrderBtn").addEventListener("click", function(){
+    els.confirmCard.hidden = true;
+    els.form.reset();
+    els.paymentDetails.hidden = true;
+    renderRice(); renderCurries(); renderPayment(); tick();
+  });
+
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,611 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Kussiya Kitchen — Admin</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600&family=Work+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --cream:#FBF6EC; --paper:#FFFDF8; --ink:#2C2118; --ink-soft:#5B4C3F;
+    --turmeric:#D69A2D; --turmeric-deep:#B57C1C; --paprika:#BC4430; --paprika-deep:#9B3624;
+    --leaf:#52734D; --line:#E4D5B7; --line-soft:#EFE4CC;
+  }
+  *{box-sizing:border-box;}
+  body{margin:0; background:var(--cream); color:var(--ink); font-family:'Work Sans', sans-serif; line-height:1.5;}
+  h1,h2,h3{font-family:'Fraunces', serif; margin:0; font-weight:600;}
+  .wrap{max-width:940px; margin:0 auto; padding:0 18px 60px;}
+  [hidden]{display:none !important;}
+
+  .login-screen{min-height:100vh; display:flex; align-items:center; justify-content:center; padding:20px;}
+  .login-card{background:var(--paper); border:1px solid var(--line-soft); border-radius:18px; padding:34px 28px; max-width:360px; width:100%; box-shadow:0 12px 30px -18px rgba(44,33,24,0.35);}
+  .login-card h1{font-size:26px; margin-bottom:6px;}
+  .login-card p{color:var(--ink-soft); font-size:14px; margin:0 0 20px;}
+  .login-card input{width:100%; padding:12px 14px; font-size:16px; border:1.5px solid var(--line); border-radius:10px; margin-bottom:12px; font-family:inherit;}
+  .login-card button{width:100%; padding:13px; font-size:15.5px; font-weight:600; font-family:inherit; background:var(--paprika); color:#fff; border:none; border-radius:10px; cursor:pointer;}
+  .login-card button:hover{background:var(--paprika-deep);}
+  .login-error{color:var(--paprika-deep); font-size:13px; margin:-4px 0 12px; display:none;}
+  .init-error{background:#F7E4DE; border:1px solid #E9C9BE; color:var(--paprika-deep); font-size:12.5px; line-height:1.5; padding:12px 14px; border-radius:10px; margin-bottom:16px;}
+
+  header.topbar{background:linear-gradient(180deg, var(--paprika) 0%, var(--paprika-deep) 100%); color:#fff; padding:22px 18px; border-bottom:4px solid var(--turmeric);}
+  .topbar-inner{max-width:940px; margin:0 auto; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px;}
+  .topbar-inner h1{font-size:24px; color:#fff;}
+  .topbar-inner .sub{font-size:12.5px; color:#F3D5B0;}
+  .logout-btn{background:rgba(0,0,0,0.2); border:1px solid rgba(255,255,255,0.25); color:#fff; padding:9px 14px; border-radius:9px; font-size:13.5px; cursor:pointer; font-family:inherit;}
+  .logout-btn:hover{background:rgba(0,0,0,0.32);}
+  .conn-pill{font-size:11.5px; padding:4px 10px; border-radius:999px; background:rgba(255,255,255,0.2); margin-left:8px;}
+  .conn-pill.bad{background:#7A2A1D;}
+
+  nav.tabs{display:flex; gap:6px; margin:22px 0 20px; overflow-x:auto; padding-bottom:2px;}
+  nav.tabs button{font-family:inherit; font-size:14.5px; font-weight:600; padding:10px 16px; background:#fff; border:1.5px solid var(--line); border-radius:999px; color:var(--ink-soft); cursor:pointer; white-space:nowrap;}
+  nav.tabs button.active{background:var(--ink); border-color:var(--ink); color:#fff;}
+
+  .panel{background:var(--paper); border:1px solid var(--line-soft); border-radius:16px; padding:24px 22px; box-shadow:0 8px 22px -16px rgba(44,33,24,0.3); margin-bottom:20px;}
+  .panel h2{font-size:19px; margin-bottom:4px;}
+  .panel .hint{color:var(--ink-soft); font-size:13.5px; margin:0 0 18px;}
+
+  .item-row{display:flex; align-items:center; gap:12px; padding:11px 0; border-bottom:1px dashed var(--line); flex-wrap:wrap;}
+  .item-row:last-child{border-bottom:none;}
+  .item-row .swatch{width:16px; height:16px; border-radius:50%; border:1px solid rgba(0,0,0,0.15); flex:none;}
+  .item-row .name{flex:1; font-size:15px; font-weight:500; min-width:120px;}
+  .item-row .price{font-weight:600; color:var(--turmeric-deep); font-size:14px; min-width:70px;}
+  .item-row .meta{font-size:11.5px; padding:3px 8px; border-radius:999px; font-weight:600;}
+  .item-row .meta.meat{background:#F7E4DE; color:var(--paprika-deep);}
+  .item-row .meta.veg{background:#E7EFE3; color:var(--leaf);}
+  .item-row .meta.inactive{background:#EEE7DA; color:var(--ink-soft);}
+  .icon-btn{background:none; border:1.5px solid var(--line); border-radius:8px; padding:6px 10px; font-size:12.5px; cursor:pointer; font-family:inherit; color:var(--ink);}
+  .icon-btn:hover{background:var(--line-soft);}
+  .icon-btn.danger{color:var(--paprika-deep); border-color:#E9C9BE;}
+
+  .add-form{display:flex; gap:10px; flex-wrap:wrap; align-items:flex-end; margin-top:16px; padding-top:16px; border-top:1px solid var(--line-soft);}
+  .add-form .field{display:flex; flex-direction:column; gap:5px;}
+  .add-form label{font-size:12.5px; font-weight:600; color:var(--ink-soft);}
+  .add-form input[type=text], .add-form input[type=number]{padding:10px 12px; font-size:14.5px; border:1.5px solid var(--line); border-radius:9px; font-family:inherit;}
+  .add-form input[type=number]{width:100px;}
+  .add-form input[type=color]{width:44px; height:40px; border:1.5px solid var(--line); border-radius:9px; padding:2px; background:#fff;}
+  .checkbox-field{display:flex; align-items:center; gap:7px; font-size:13.5px; padding-bottom:9px;}
+  .btn-primary{padding:10px 18px; font-size:14.5px; font-weight:600; font-family:inherit; background:var(--leaf); color:#fff; border:none; border-radius:9px; cursor:pointer;}
+  .btn-primary:hover{filter:brightness(0.95);}
+
+  .settings-grid{display:grid; grid-template-columns:1fr 1fr; gap:16px;}
+  @media (max-width:520px){ .settings-grid{grid-template-columns:1fr;} }
+  .settings-grid label{display:block; font-size:13px; font-weight:600; margin-bottom:6px;}
+  .settings-grid input[type=time], .settings-grid input[type=text], .settings-grid input[type=password], textarea{width:100%; padding:11px 13px; font-size:15px; border:1.5px solid var(--line); border-radius:9px; font-family:inherit;}
+  textarea{resize:vertical; min-height:70px;}
+  .full-row{grid-column:1 / -1;}
+  .save-msg{color:var(--leaf); font-size:13.5px; margin-top:10px; display:none; font-weight:600;}
+
+  .orders-toolbar{display:flex; gap:10px; align-items:center; flex-wrap:wrap; margin-bottom:16px;}
+  .orders-toolbar input[type=date]{padding:9px 12px; border:1.5px solid var(--line); border-radius:9px; font-family:inherit; font-size:14px;}
+  .orders-toolbar button{padding:9px 14px; border:1.5px solid var(--line); border-radius:9px; background:#fff; font-family:inherit; font-size:13.5px; cursor:pointer;}
+  table.orders{width:100%; border-collapse:collapse; font-size:13.5px;}
+  table.orders th{text-align:left; padding:9px 10px; border-bottom:2px solid var(--line); color:var(--ink-soft); font-size:12px; white-space:nowrap;}
+  table.orders td{padding:10px; border-bottom:1px solid var(--line-soft); vertical-align:top;}
+  table.orders select{padding:6px 8px; border:1.5px solid var(--line); border-radius:7px; font-family:inherit; font-size:12.5px;}
+  .table-scroll{overflow-x:auto;}
+  .empty-note{color:var(--ink-soft); font-style:italic; font-size:14px; padding:14px 0;}
+  .order-id{font-family:'Fraunces', serif; color:var(--turmeric-deep); font-weight:600;}
+  .order-total{font-weight:700;}
+
+  .pm-card{border:1px solid var(--line-soft); border-radius:12px; padding:16px; margin-bottom:14px;}
+  .pm-card:last-child{margin-bottom:0;}
+  .pm-card-head{display:flex; align-items:center; justify-content:space-between; gap:10px; flex-wrap:wrap; margin-bottom:12px;}
+  .pm-card-head h3{font-size:15.5px;}
+  .pm-badge{font-size:11.5px; padding:3px 9px; border-radius:999px; font-weight:600; white-space:nowrap;}
+  .pm-badge.on{background:#E7EFE3; color:var(--leaf);}
+  .pm-badge.off{background:#EEE7DA; color:var(--ink-soft);}
+  .pm-grid{display:grid; grid-template-columns:1fr 1fr; gap:12px;}
+  @media (max-width:520px){ .pm-grid{grid-template-columns:1fr;} }
+  .pm-grid label{display:block; font-size:12px; font-weight:600; margin-bottom:5px; color:var(--ink-soft);}
+  .pm-grid input, .pm-grid textarea{width:100%; padding:9px 11px; font-size:14px; border:1.5px solid var(--line); border-radius:8px; font-family:inherit;}
+  .pm-grid textarea{min-height:56px; resize:vertical;}
+  .pm-actions{display:flex; gap:10px; margin-top:12px; flex-wrap:wrap; align-items:center;}
+  .pm-save-msg{font-size:12.5px; color:var(--leaf); font-weight:600; display:none;}
+</style>
+</head>
+<body>
+
+<div class="login-screen" id="loginScreen">
+  <div class="login-card">
+    <h1>Kussiya Kitchen</h1>
+    <p>Enter the admin password to manage the menu and orders.</p>
+    <div class="init-error" id="initError" hidden></div>
+    <input type="password" id="pwInput" placeholder="Admin password" autocomplete="current-password">
+    <p class="login-error" id="pwError">That password isn't right — try again.</p>
+    <button id="loginBtn" type="button">Log in</button>
+  </div>
+</div>
+
+<div id="dashboard" hidden>
+  <header class="topbar">
+    <div class="topbar-inner">
+      <div>
+        <h1>Kussiya Kitchen <span class="conn-pill" id="connPill">Live</span></h1>
+        <div class="sub">Admin dashboard</div>
+      </div>
+      <button class="logout-btn" id="logoutBtn">Log out</button>
+    </div>
+  </header>
+
+  <div class="wrap">
+    <nav class="tabs">
+      <button data-tab="menu" class="active">Menu &amp; prices</button>
+      <button data-tab="payment">Payment</button>
+      <button data-tab="settings">Settings</button>
+      <button data-tab="orders">Orders</button>
+    </nav>
+
+    <section id="tab-menu">
+      <div class="panel">
+        <h2>Rice types</h2>
+        <p class="hint">Shown to customers as chip choices with price, in this order. Changes appear on the customer page within a second or two.</p>
+        <div id="riceList"></div>
+        <div class="add-form">
+          <div class="field"><label for="newRiceName">Rice name</label><input type="text" id="newRiceName" placeholder="e.g. Kaha bath"></div>
+          <div class="field"><label for="newRicePrice">Price (Rs.)</label><input type="number" id="newRicePrice" min="0" step="1" placeholder="100"></div>
+          <div class="field"><label for="newRiceColor">Colour</label><input type="color" id="newRiceColor" value="#D69A2D"></div>
+          <button class="btn-primary" id="addRiceBtn" type="button">Add rice type</button>
+        </div>
+      </div>
+
+      <div class="panel">
+        <h2>Curries</h2>
+        <p class="hint">Mark whether each curry contains meat and set its price — customers see both.</p>
+        <div id="curryList"></div>
+        <div class="add-form">
+          <div class="field"><label for="newCurryName">Curry name</label><input type="text" id="newCurryName" placeholder="e.g. Cashew curry"></div>
+          <div class="field"><label for="newCurryPrice">Price (Rs.)</label><input type="number" id="newCurryPrice" min="0" step="1" placeholder="80"></div>
+          <div class="checkbox-field"><input type="checkbox" id="newCurryMeat"><label for="newCurryMeat" style="margin:0;">Contains meat</label></div>
+          <button class="btn-primary" id="addCurryBtn" type="button">Add curry</button>
+        </div>
+      </div>
+    </section>
+
+    <section id="tab-payment" hidden>
+      <div class="panel">
+        <h2>Payment options</h2>
+        <p class="hint">Turn payment methods on or off, and fill in the account/QR details customers will see when they select each method. Only methods marked "Shown to customers" appear on the order form.</p>
+        <div id="paymentList"></div>
+      </div>
+    </section>
+
+    <section id="tab-settings" hidden>
+      <div class="panel">
+        <h2>Order window &amp; delivery</h2>
+        <p class="hint">Controls the countdown timer and form availability customers see — updates live, no need to tell customers to refresh.</p>
+        <div class="settings-grid">
+          <div><label for="openTime">Ordering opens</label><input type="time" id="openTime"></div>
+          <div><label for="closeTime">Ordering closes (cutoff)</label><input type="time" id="closeTime"></div>
+          <div class="full-row"><label for="processingText">Message shown after an order is placed</label><textarea id="processingText" placeholder="e.g. Your lunch will be delivered before 12:30 PM."></textarea></div>
+        </div>
+        <button class="btn-primary" id="saveSettingsBtn" type="button" style="margin-top:16px;">Save settings</button>
+        <div class="save-msg" id="settingsSaveMsg">Saved — customers will see this update within a second or two.</div>
+      </div>
+
+      <div class="panel">
+        <h2>Admin password</h2>
+        <p class="hint">Change the password used to log into this dashboard.</p>
+        <div class="settings-grid">
+          <div class="full-row"><label for="newPassword">New admin password</label><input type="password" id="newPassword" placeholder="Leave blank to keep current password"></div>
+        </div>
+        <button class="btn-primary" id="savePasswordBtn" type="button" style="margin-top:12px;">Update password</button>
+        <div class="save-msg" id="passwordSaveMsg">Password updated.</div>
+      </div>
+    </section>
+
+    <section id="tab-orders" hidden>
+      <div class="panel">
+        <h2>Orders</h2>
+        <p class="hint">Newest orders first, updating live as customers order. Order numbers are unique and never repeat.</p>
+        <div class="orders-toolbar">
+          <input type="date" id="filterDate">
+          <button id="clearFilterBtn" type="button">Clear filter</button>
+          <button id="exportBtn" type="button">Export CSV</button>
+        </div>
+        <div class="table-scroll">
+          <table class="orders">
+            <thead><tr><th>Order</th><th>Customer</th><th>Rice &amp; curries</th><th>Total</th><th>Payment</th><th>Delivery date</th><th>Placed</th><th>Status</th><th></th></tr></thead>
+            <tbody id="ordersBody"></tbody>
+          </table>
+        </div>
+        <p class="empty-note" id="ordersEmpty" hidden>No orders yet.</p>
+      </div>
+    </section>
+  </div>
+</div>
+
+<script src="config.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+<script>
+(function(){
+  "use strict";
+
+  function showInitError(msg){
+    var el = document.getElementById("initError");
+    el.textContent = msg;
+    el.hidden = false;
+  }
+  function isPlaceholder(v){ return typeof v !== "string" || v.indexOf("YOUR_") === 0; }
+  function withTimeout(promise, ms){
+    return Promise.race([
+      promise,
+      new Promise(function(_, reject){ setTimeout(function(){ reject(new Error("timeout")); }, ms); })
+    ]);
+  }
+
+  var db = null;
+  try{
+    if(typeof firebaseConfig === "undefined" || Object.keys(firebaseConfig).some(function(k){ return isPlaceholder(firebaseConfig[k]); })){
+      showInitError("config.js still has placeholder Firebase values (something starting with \"YOUR_\"). Open config.js on GitHub, paste in your real Firebase project settings, then reload this page.");
+    } else if(typeof firebase === "undefined"){
+      showInitError("The Firebase library didn't load — check your internet connection, or that nothing (like an ad blocker) is blocking gstatic.com, then reload.");
+    } else {
+      firebase.initializeApp(firebaseConfig);
+      db = firebase.firestore();
+    }
+  }catch(e){
+    console.error(e);
+    showInitError("Couldn't start Firebase: " + e.message + ". Double check config.js has valid values (no missing quotes or commas), then reload.");
+  }
+
+  var DEFAULT_RICE = [
+    {id:"r-white", name:"White rice", hex:"#FFFDF6", price:90, active:true},
+    {id:"r-red",   name:"Red rice",   hex:"#8C3A2B", price:100, active:true},
+    {id:"r-yellow",name:"Yellow rice",hex:"#D69A2D", price:100, active:true}
+  ];
+  var DEFAULT_CURRIES = [
+    {id:"c-dhal",      name:"Dhal curry",      hasMeat:false, price:80,  active:true},
+    {id:"c-jackfruit", name:"Jackfruit curry", hasMeat:false, price:90,  active:true},
+    {id:"c-chicken",   name:"Chicken curry",   hasMeat:true,  price:180, active:true},
+    {id:"c-fish",      name:"Fish curry",      hasMeat:true,  price:160, active:true}
+  ];
+  var DEFAULT_SETTINGS = {
+    openTime:"06:00", closeTime:"10:30",
+    processingText:"Your lunch will be cooked fresh and delivered to your office before 12:30 PM.",
+    adminPassword:"kussiya2026"
+  };
+  var DEFAULT_PAYMENT_METHODS = [
+    {id:"cod",          label:"Cash on delivery",          active:true,  instructions:"Pay cash to the delivery person when your order arrives.", accountName:"", accountNumber:"", bankName:"", branch:"", qrImageUrl:""},
+    {id:"card_delivery",label:"Card on delivery",          active:false, instructions:"Pay by card using our delivery rider's card machine.", accountName:"", accountNumber:"", bankName:"", branch:"", qrImageUrl:""},
+    {id:"bank_delivery",label:"Bank transfer on delivery", active:true,  instructions:"Transfer the total to our account when your order arrives, then show the receipt to the rider.", accountName:"", accountNumber:"", bankName:"", branch:"", qrImageUrl:""},
+    {id:"qr_delivery",  label:"QR payment on delivery",    active:true,  instructions:"Scan our QR code and pay when your order arrives.", accountName:"", accountNumber:"", bankName:"", branch:"", qrImageUrl:""},
+    {id:"bank_transfer",label:"Bank transfer",             active:true,  instructions:"Transfer the total to our account before your order is prepared, then place your order.", accountName:"", accountNumber:"", bankName:"", branch:"", qrImageUrl:""},
+    {id:"card_payment", label:"Card payment",              active:false, instructions:"Online card payment is coming soon — please choose another payment method for now.", accountName:"", accountNumber:"", bankName:"", branch:"", qrImageUrl:""}
+  ];
+
+  function escapeHtml(str){ return String(str).replace(/[&<>"']/g, function(ch){ return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[ch]; }); }
+  function money(n){ return "Rs. " + Number(n||0).toLocaleString(); }
+  function uid(prefix){ return prefix + "-" + Date.now().toString(36) + Math.random().toString(36).slice(2,6); }
+
+  function ensureDoc(ref, data){ return ref.get().then(function(snap){ if(!snap.exists) return ref.set(data); }); }
+  if(db){
+    ensureDoc(db.collection("menu").doc("rice"), {items: DEFAULT_RICE});
+    ensureDoc(db.collection("menu").doc("curries"), {items: DEFAULT_CURRIES});
+    ensureDoc(db.collection("settings").doc("main"), DEFAULT_SETTINGS);
+    ensureDoc(db.collection("settings").doc("payment"), {methods: DEFAULT_PAYMENT_METHODS});
+  }
+
+  var localState = { rice: DEFAULT_RICE, curries: DEFAULT_CURRIES, settings: DEFAULT_SETTINGS, payment: DEFAULT_PAYMENT_METHODS, orders: [] };
+
+  var loginScreen = document.getElementById("loginScreen");
+  var dashboard = document.getElementById("dashboard");
+  var connPill = document.getElementById("connPill");
+
+  function tryLogin(){
+    document.getElementById("initError").hidden = true;
+    document.getElementById("pwError").style.display = "none";
+    if(!db){
+      showInitError("Firebase isn't set up correctly yet, so login can't be checked — see the message above, fix config.js, and reload.");
+      return;
+    }
+    var btn = document.getElementById("loginBtn");
+    btn.disabled = true;
+    btn.textContent = "Checking…";
+    withTimeout(db.collection("settings").doc("main").get(), 10000).then(function(snap){
+      var settings = snap.exists ? Object.assign({}, DEFAULT_SETTINGS, snap.data()) : DEFAULT_SETTINGS;
+      var val = document.getElementById("pwInput").value;
+      if(val === settings.adminPassword){
+        sessionStorage.setItem("kussiya_admin_ok", "1");
+        showDashboard();
+      } else {
+        document.getElementById("pwError").style.display = "block";
+      }
+    }).catch(function(err){
+      console.error(err);
+      if(err && err.code === "permission-denied"){
+        showInitError("Firestore says permission denied. Go to Firebase Console \u2192 Firestore \u2192 Rules and make sure you published the rules exactly as given (allow read/write: if true), then reload.");
+      } else if(err && err.message === "timeout"){
+        showInitError("Couldn't reach Firebase within 10 seconds. Check your internet connection, and that the projectId in config.js exactly matches your Firebase project, then reload.");
+      } else {
+        showInitError("Couldn't reach the kitchen's database (" + (err && err.message ? err.message : "unknown error") + "). Check config.js and your connection, then reload.");
+      }
+    }).finally(function(){
+      btn.disabled = false;
+      btn.textContent = "Log in";
+    });
+  }
+  document.getElementById("loginBtn").addEventListener("click", tryLogin);
+  document.getElementById("pwInput").addEventListener("keydown", function(e){ if(e.key === "Enter") tryLogin(); });
+  document.getElementById("logoutBtn").addEventListener("click", function(){ sessionStorage.removeItem("kussiya_admin_ok"); location.reload(); });
+
+  function showDashboard(){
+    loginScreen.hidden = true;
+    dashboard.hidden = false;
+    startListeners();
+  }
+  if(sessionStorage.getItem("kussiya_admin_ok") === "1"){ showDashboard(); }
+
+  var listenersStarted = false;
+  function startListeners(){
+    if(listenersStarted) return;
+    listenersStarted = true;
+
+    db.collection("menu").doc("rice").onSnapshot(function(snap){
+      localState.rice = (snap.exists && snap.data().items) ? snap.data().items : DEFAULT_RICE;
+      renderRice(); connPill.textContent = "Live"; connPill.classList.remove("bad");
+    }, function(err){ connPill.textContent = "Offline"; connPill.classList.add("bad"); console.error(err); });
+
+    db.collection("menu").doc("curries").onSnapshot(function(snap){
+      localState.curries = (snap.exists && snap.data().items) ? snap.data().items : DEFAULT_CURRIES;
+      renderCurries();
+    }, function(err){ console.error(err); });
+
+    db.collection("settings").doc("main").onSnapshot(function(snap){
+      localState.settings = snap.exists ? Object.assign({}, DEFAULT_SETTINGS, snap.data()) : DEFAULT_SETTINGS;
+      loadSettingsForm();
+    }, function(err){ console.error(err); });
+
+    db.collection("settings").doc("payment").onSnapshot(function(snap){
+      localState.payment = (snap.exists && snap.data().methods) ? snap.data().methods : DEFAULT_PAYMENT_METHODS;
+      renderPayment();
+    }, function(err){ console.error(err); });
+
+    db.collection("orders").orderBy("placedAt", "desc").limit(300).onSnapshot(function(snap){
+      localState.orders = snap.docs.map(function(d){ return d.data(); });
+      renderOrders();
+    }, function(err){ console.error(err); });
+  }
+
+  /* ---------- TABS ---------- */
+  var tabButtons = document.querySelectorAll("nav.tabs button");
+  tabButtons.forEach(function(btn){
+    btn.addEventListener("click", function(){
+      tabButtons.forEach(function(b){ b.classList.remove("active"); });
+      btn.classList.add("active");
+      ["menu","payment","settings","orders"].forEach(function(t){ document.getElementById("tab-"+t).hidden = (t !== btn.dataset.tab); });
+    });
+  });
+
+  /* ---------- RICE ---------- */
+  function renderRice(){
+    var container = document.getElementById("riceList");
+    container.innerHTML = "";
+    if(localState.rice.length === 0){ container.innerHTML = '<p class="empty-note">No rice types yet.</p>'; return; }
+    localState.rice.forEach(function(r){
+      var row = document.createElement("div");
+      row.className = "item-row";
+      row.innerHTML =
+        '<span class="swatch" style="background:'+r.hex+'"></span>' +
+        '<span class="name">'+escapeHtml(r.name)+'</span>' +
+        '<span class="price">'+money(r.price)+'</span>' +
+        (r.active === false ? '<span class="meta inactive">Hidden</span>' : '') +
+        '<button class="icon-btn" data-action="editPrice" data-id="'+r.id+'">Edit price</button>' +
+        '<button class="icon-btn" data-action="toggle" data-id="'+r.id+'">'+(r.active===false?"Show":"Hide")+'</button>' +
+        '<button class="icon-btn" data-action="rename" data-id="'+r.id+'">Rename</button>' +
+        '<button class="icon-btn danger" data-action="delete" data-id="'+r.id+'">Remove</button>';
+      container.appendChild(row);
+    });
+    container.querySelectorAll("button").forEach(function(btn){
+      btn.addEventListener("click", function(){
+        var list = localState.rice.slice();
+        var idx = list.findIndex(function(x){ return x.id === btn.dataset.id; });
+        if(idx === -1) return;
+        if(btn.dataset.action === "toggle"){ list[idx] = Object.assign({}, list[idx], {active: list[idx].active === false}); }
+        else if(btn.dataset.action === "rename"){ var name = prompt("Rename rice type:", list[idx].name); if(name && name.trim()) list[idx] = Object.assign({}, list[idx], {name:name.trim()}); }
+        else if(btn.dataset.action === "editPrice"){ var p = prompt("New price for "+list[idx].name+" (Rs.):", list[idx].price); if(p !== null && !isNaN(parseFloat(p))) list[idx] = Object.assign({}, list[idx], {price: parseFloat(p)}); }
+        else if(btn.dataset.action === "delete"){ if(!confirm('Remove "'+list[idx].name+'"? This cannot be undone.')) return; list.splice(idx,1); }
+        db.collection("menu").doc("rice").set({items:list});
+      });
+    });
+  }
+  document.getElementById("addRiceBtn").addEventListener("click", function(){
+    var nameInput = document.getElementById("newRiceName"), priceInput = document.getElementById("newRicePrice"), colorInput = document.getElementById("newRiceColor");
+    var name = nameInput.value.trim();
+    if(!name){ nameInput.focus(); return; }
+    var list = localState.rice.slice();
+    list.push({id: uid("r"), name:name, hex: colorInput.value, price: parseFloat(priceInput.value)||0, active:true});
+    db.collection("menu").doc("rice").set({items:list}).then(function(){ nameInput.value = ""; priceInput.value = ""; });
+  });
+
+  /* ---------- CURRIES ---------- */
+  function renderCurries(){
+    var container = document.getElementById("curryList");
+    container.innerHTML = "";
+    if(localState.curries.length === 0){ container.innerHTML = '<p class="empty-note">No curries yet.</p>'; return; }
+    localState.curries.forEach(function(c){
+      var row = document.createElement("div");
+      row.className = "item-row";
+      row.innerHTML =
+        '<span class="name">'+escapeHtml(c.name)+'</span>' +
+        '<span class="price">'+money(c.price)+'</span>' +
+        '<span class="meta '+(c.hasMeat?"meat":"veg")+'">'+(c.hasMeat?"Meat":"Veg")+'</span>' +
+        (c.active === false ? '<span class="meta inactive">Hidden</span>' : '') +
+        '<button class="icon-btn" data-action="editPrice" data-id="'+c.id+'">Edit price</button>' +
+        '<button class="icon-btn" data-action="toggleMeat" data-id="'+c.id+'">Toggle meat</button>' +
+        '<button class="icon-btn" data-action="toggle" data-id="'+c.id+'">'+(c.active===false?"Show":"Hide")+'</button>' +
+        '<button class="icon-btn" data-action="rename" data-id="'+c.id+'">Rename</button>' +
+        '<button class="icon-btn danger" data-action="delete" data-id="'+c.id+'">Remove</button>';
+      container.appendChild(row);
+    });
+    container.querySelectorAll("button").forEach(function(btn){
+      btn.addEventListener("click", function(){
+        var list = localState.curries.slice();
+        var idx = list.findIndex(function(x){ return x.id === btn.dataset.id; });
+        if(idx === -1) return;
+        if(btn.dataset.action === "toggle"){ list[idx] = Object.assign({}, list[idx], {active: list[idx].active === false}); }
+        else if(btn.dataset.action === "toggleMeat"){ list[idx] = Object.assign({}, list[idx], {hasMeat: !list[idx].hasMeat}); }
+        else if(btn.dataset.action === "rename"){ var name = prompt("Rename curry:", list[idx].name); if(name && name.trim()) list[idx] = Object.assign({}, list[idx], {name:name.trim()}); }
+        else if(btn.dataset.action === "editPrice"){ var p = prompt("New price for "+list[idx].name+" (Rs.):", list[idx].price); if(p !== null && !isNaN(parseFloat(p))) list[idx] = Object.assign({}, list[idx], {price: parseFloat(p)}); }
+        else if(btn.dataset.action === "delete"){ if(!confirm('Remove "'+list[idx].name+'"? This cannot be undone.')) return; list.splice(idx,1); }
+        db.collection("menu").doc("curries").set({items:list});
+      });
+    });
+  }
+  document.getElementById("addCurryBtn").addEventListener("click", function(){
+    var nameInput = document.getElementById("newCurryName"), priceInput = document.getElementById("newCurryPrice"), meatInput = document.getElementById("newCurryMeat");
+    var name = nameInput.value.trim();
+    if(!name){ nameInput.focus(); return; }
+    var list = localState.curries.slice();
+    list.push({id: uid("c"), name:name, hasMeat: meatInput.checked, price: parseFloat(priceInput.value)||0, active:true});
+    db.collection("menu").doc("curries").set({items:list}).then(function(){ nameInput.value = ""; priceInput.value = ""; meatInput.checked = false; });
+  });
+
+  /* ---------- PAYMENT OPTIONS ---------- */
+  function renderPayment(){
+    var container = document.getElementById("paymentList");
+    container.innerHTML = "";
+    localState.payment.forEach(function(m){
+      var card = document.createElement("div");
+      card.className = "pm-card";
+      card.innerHTML =
+        '<div class="pm-card-head">' +
+          '<h3>'+escapeHtml(m.label)+'</h3>' +
+          '<span class="pm-badge '+(m.active?"on":"off")+'">'+(m.active?"Shown to customers":"Hidden")+'</span>' +
+        '</div>' +
+        '<div class="pm-grid">' +
+          '<div class="full-row"><label>Instructions shown to customer</label><textarea data-field="instructions">'+escapeHtml(m.instructions||"")+'</textarea></div>' +
+          '<div><label>Bank name</label><input type="text" data-field="bankName" value="'+escapeHtml(m.bankName||"")+'"></div>' +
+          '<div><label>Branch</label><input type="text" data-field="branch" value="'+escapeHtml(m.branch||"")+'"></div>' +
+          '<div><label>Account name</label><input type="text" data-field="accountName" value="'+escapeHtml(m.accountName||"")+'"></div>' +
+          '<div><label>Account number</label><input type="text" data-field="accountNumber" value="'+escapeHtml(m.accountNumber||"")+'"></div>' +
+          '<div class="full-row"><label>QR code image URL</label><input type="text" data-field="qrImageUrl" value="'+escapeHtml(m.qrImageUrl||"")+'" placeholder="https://..."></div>' +
+        '</div>' +
+        '<div class="pm-actions">' +
+          '<button class="icon-btn" data-action="toggle" data-id="'+m.id+'">'+(m.active?"Hide from customers":"Show to customers")+'</button>' +
+          '<button class="btn-primary" data-action="save" data-id="'+m.id+'">Save</button>' +
+          '<span class="pm-save-msg">Saved.</span>' +
+        '</div>';
+      container.appendChild(card);
+    });
+    container.querySelectorAll('button[data-action="toggle"]').forEach(function(btn){
+      btn.addEventListener("click", function(){
+        var list = localState.payment.slice();
+        var idx = list.findIndex(function(x){ return x.id === btn.dataset.id; });
+        if(idx === -1) return;
+        list[idx] = Object.assign({}, list[idx], {active: list[idx].active === false || list[idx].active === undefined ? true : !list[idx].active});
+        db.collection("settings").doc("payment").set({methods:list});
+      });
+    });
+    container.querySelectorAll('button[data-action="save"]').forEach(function(btn){
+      btn.addEventListener("click", function(){
+        var list = localState.payment.slice();
+        var idx = list.findIndex(function(x){ return x.id === btn.dataset.id; });
+        if(idx === -1) return;
+        var card = btn.closest(".pm-card");
+        var updated = Object.assign({}, list[idx]);
+        card.querySelectorAll("[data-field]").forEach(function(f){ updated[f.dataset.field] = f.value.trim(); });
+        list[idx] = updated;
+        db.collection("settings").doc("payment").set({methods:list}).then(function(){
+          var msg = card.querySelector(".pm-save-msg");
+          msg.style.display = "inline";
+          setTimeout(function(){ msg.style.display = "none"; }, 2200);
+        });
+      });
+    });
+  }
+
+  /* ---------- SETTINGS ---------- */
+  function loadSettingsForm(){
+    var s = localState.settings;
+    document.getElementById("openTime").value = s.openTime;
+    document.getElementById("closeTime").value = s.closeTime;
+    document.getElementById("processingText").value = s.processingText;
+  }
+  document.getElementById("saveSettingsBtn").addEventListener("click", function(){
+    var s = Object.assign({}, localState.settings);
+    s.openTime = document.getElementById("openTime").value || s.openTime;
+    s.closeTime = document.getElementById("closeTime").value || s.closeTime;
+    s.processingText = document.getElementById("processingText").value.trim() || s.processingText;
+    db.collection("settings").doc("main").set(s).then(function(){
+      var msg = document.getElementById("settingsSaveMsg");
+      msg.style.display = "block";
+      setTimeout(function(){ msg.style.display = "none"; }, 2600);
+    });
+  });
+  document.getElementById("savePasswordBtn").addEventListener("click", function(){
+    var val = document.getElementById("newPassword").value;
+    if(!val.trim()) return;
+    var s = Object.assign({}, localState.settings, {adminPassword: val.trim()});
+    db.collection("settings").doc("main").set(s).then(function(){
+      document.getElementById("newPassword").value = "";
+      var msg = document.getElementById("passwordSaveMsg");
+      msg.style.display = "block";
+      setTimeout(function(){ msg.style.display = "none"; }, 2600);
+    });
+  });
+
+  /* ---------- ORDERS ---------- */
+  var currentFilterDate = "";
+  function renderOrders(){
+    var orders = localState.orders.slice();
+    if(currentFilterDate){ orders = orders.filter(function(o){ return o.deliveryDate === currentFilterDate; }); }
+    var body = document.getElementById("ordersBody");
+    body.innerHTML = "";
+    document.getElementById("ordersEmpty").hidden = orders.length !== 0;
+    var statuses = ["Pending","Preparing","Out for delivery","Delivered","Cancelled"];
+
+    orders.forEach(function(o){
+      var tr = document.createElement("tr");
+      var optionsHtml = statuses.map(function(st){ return '<option value="'+st+'" '+(o.status===st?"selected":"")+'>'+st+'</option>'; }).join("");
+      var curryText = (o.curries||[]).map(function(c){ return typeof c === "string" ? c : c.name; }).join(", ");
+      tr.innerHTML =
+        '<td><span class="order-id">'+escapeHtml(o.id)+'</span></td>' +
+        '<td>'+escapeHtml(o.name)+'<br><span style="color:var(--ink-soft); font-size:12px;">'+escapeHtml(o.phone)+'</span><br><span style="color:var(--ink-soft); font-size:12px;">'+escapeHtml(o.address)+'</span></td>' +
+        '<td>'+escapeHtml(o.rice)+'<br><span style="color:var(--ink-soft); font-size:12px;">'+escapeHtml(curryText)+'</span></td>' +
+        '<td class="order-total">'+money(o.total)+'</td>' +
+        '<td>'+escapeHtml(o.payment ? o.payment.label : "—")+'</td>' +
+        '<td>'+escapeHtml(o.deliveryDate)+'</td>' +
+        '<td>'+escapeHtml(new Date(o.placedAt).toLocaleString())+'</td>' +
+        '<td><select data-id="'+o.id+'">'+optionsHtml+'</select></td>' +
+        '<td><button class="icon-btn danger" data-del="'+o.id+'">Delete</button></td>';
+      body.appendChild(tr);
+    });
+
+    body.querySelectorAll("select").forEach(function(sel){
+      sel.addEventListener("change", function(){
+        db.collection("orders").doc(sel.dataset.id).update({status: sel.value});
+      });
+    });
+    body.querySelectorAll("button[data-del]").forEach(function(btn){
+      btn.addEventListener("click", function(){
+        if(!confirm("Delete this order?")) return;
+        db.collection("orders").doc(btn.dataset.del).delete();
+      });
+    });
+  }
+  document.getElementById("filterDate").addEventListener("change", function(e){ currentFilterDate = e.target.value; renderOrders(); });
+  document.getElementById("clearFilterBtn").addEventListener("click", function(){ currentFilterDate = ""; document.getElementById("filterDate").value = ""; renderOrders(); });
+  document.getElementById("exportBtn").addEventListener("click", function(){
+    var headers = ["Order ID","Name","Phone","Address","Rice","Curries","Total","Payment method","Delivery date","Placed at","Status"];
+    var rows = localState.orders.map(function(o){
+      var curryText = (o.curries||[]).map(function(c){ return typeof c === "string" ? c : c.name; }).join("; ");
+      var paymentText = o.payment ? o.payment.label : "";
+      return [o.id,o.name,o.phone,o.address,o.rice,curryText,o.total,paymentText,o.deliveryDate,o.placedAt,o.status]
+        .map(function(v){ return '"'+String(v).replace(/"/g,'""')+'"'; }).join(",");
+    });
+    var csv = headers.join(",") + "\n" + rows.join("\n");
+    var blob = new Blob([csv], {type:"text/csv"});
+    var url = URL.createObjectURL(blob);
+    var a = document.createElement("a");
+    a.href = url; a.download = "kussiya-orders.csv";
+    document.body.appendChild(a); a.click(); document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  });
+
+})();
+</script>
+</body>
+</html>
