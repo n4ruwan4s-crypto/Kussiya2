@@ -7,10 +7,6 @@ const firebaseConfig = {
   appId: "1:1032681220499:web:90d7eb2f3ef21df576e066"
 };
 
-// Initialize Firebase
-const app = initializeApp(firebaseConfig);
-
-
 // 2) Paste your EmailJS values here (from emailjs.com), see setup steps.
 const EMAILJS_PUBLIC_KEY = "hcIuwffnSygMgQPca";
 const EMAILJS_SERVICE_ID = "service_nzft1yd";
