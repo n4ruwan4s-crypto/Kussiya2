@@ -15,13 +15,4 @@ const EMAILJS_TEMPLATE_ID = "template_pc4qp9d";
 // 3) Where order notification emails should land.
 const ADMIN_NOTIFY_EMAIL = "n4ruwan4s@gmail.com";
 
-<!-- Google tag (gtag.js) -->
-<script async src="https://www.googletagmanager.com/gtag/js?id=G-VBL90KPW2G"></script>
-<script>
-  window.dataLayer = window.dataLayer || [];
-  function gtag(){dataLayer.push(arguments);}
-  gtag('js', new Date());
-
-  gtag('config', 'G-VBL90KPW2G');
-</script>
 const FIREBASE_MEASUREMENT_ID = "G-VBL90KPW2G";
