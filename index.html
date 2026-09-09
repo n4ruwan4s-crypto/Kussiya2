@@ -1,6 +1,14 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+<!-- Google tag (gtag.js) -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-VBL90KPW2G"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+  gtag('config', 'G-VBL90KPW2G');
+</script>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Kussiya — Homemade Lunch, Ordered Today</title>
@@ -8,17 +16,6 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600&family=Work+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
-
-<!-- Google tag (gtag.js) -->
-<script async src="https://www.googletagmanager.com/gtag/js?id=G-VBL90KPW2G"></script>
-<script>
-  window.dataLayer = window.dataLayer || [];
-  function gtag(){dataLayer.push(arguments);}
-  gtag('js', new Date());
-
-  gtag('config', 'G-VBL90KPW2G');
-</script>
-
 <style>
   :root{
     --cream:#FBF6EC; --paper:#FFFDF8; --ink:#2C2118; --ink-soft:#5B4C3F;
@@ -238,7 +235,6 @@
 <script src="config.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-analytics-compat.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
 <script>
 (function(){
@@ -247,10 +243,9 @@
   function isPlaceholder(v){ return typeof v !== "string" || v.indexOf("YOUR_") === 0; }
 
   var db = null;
-  var analytics = null;
   var funnelFlags = {};
   function track(name, params){
-    try{ if(analytics) analytics.logEvent(name, params || {}); }catch(e){ console.error(e); }
+    try{ if(typeof gtag === "function") gtag('event', name, params || {}); }catch(e){ console.error(e); }
   }
   function trackOnce(name, params){
     if(!funnelFlags[name]){ funnelFlags[name] = true; track(name, params); }
@@ -263,15 +258,8 @@
       document.getElementById("connNote").hidden = false;
       document.getElementById("connNote").textContent = "Couldn't load required scripts — check your internet connection and reload.";
     } else {
-      var initConfig = firebaseConfig;
-      if(typeof FIREBASE_MEASUREMENT_ID !== "undefined" && !isPlaceholder(FIREBASE_MEASUREMENT_ID)){
-        initConfig = Object.assign({}, firebaseConfig, {measurementId: FIREBASE_MEASUREMENT_ID});
-      }
-      firebase.initializeApp(initConfig);
+      firebase.initializeApp(firebaseConfig);
       db = firebase.firestore();
-      if(typeof FIREBASE_MEASUREMENT_ID !== "undefined" && !isPlaceholder(FIREBASE_MEASUREMENT_ID) && firebase.analytics){
-        analytics = firebase.analytics();
-      }
     }
   }catch(e){
     console.error(e);
