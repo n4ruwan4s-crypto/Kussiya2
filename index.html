@@ -227,6 +227,7 @@
 <script src="config.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-analytics-compat.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
 <script>
 (function(){
@@ -235,6 +236,14 @@
   function isPlaceholder(v){ return typeof v !== "string" || v.indexOf("YOUR_") === 0; }
 
   var db = null;
+  var analytics = null;
+  var funnelFlags = {};
+  function track(name, params){
+    try{ if(analytics) analytics.logEvent(name, params || {}); }catch(e){ console.error(e); }
+  }
+  function trackOnce(name, params){
+    if(!funnelFlags[name]){ funnelFlags[name] = true; track(name, params); }
+  }
   try{
     if(typeof firebaseConfig === "undefined" || Object.keys(firebaseConfig).some(function(k){ return isPlaceholder(firebaseConfig[k]); })){
       document.getElementById("connNote").hidden = false;
@@ -243,8 +252,15 @@
       document.getElementById("connNote").hidden = false;
       document.getElementById("connNote").textContent = "Couldn't load required scripts — check your internet connection and reload.";
     } else {
-      firebase.initializeApp(firebaseConfig);
+      var initConfig = firebaseConfig;
+      if(typeof FIREBASE_MEASUREMENT_ID !== "undefined" && !isPlaceholder(FIREBASE_MEASUREMENT_ID)){
+        initConfig = Object.assign({}, firebaseConfig, {measurementId: FIREBASE_MEASUREMENT_ID});
+      }
+      firebase.initializeApp(initConfig);
       db = firebase.firestore();
+      if(typeof FIREBASE_MEASUREMENT_ID !== "undefined" && !isPlaceholder(FIREBASE_MEASUREMENT_ID) && firebase.analytics){
+        analytics = firebase.analytics();
+      }
     }
   }catch(e){
     console.error(e);
@@ -420,7 +436,9 @@
         '<span><span class="rice-dot" style="background:'+r.hex+'"></span>'+escapeHtml(r.name)+' <span class="chip-price">'+money(r.price)+'</span></span>';
       els.riceGrid.appendChild(wrap);
     });
-    els.riceGrid.querySelectorAll("input").forEach(function(i){ i.addEventListener("change", updateTotal); });
+    els.riceGrid.querySelectorAll("input").forEach(function(i){
+      i.addEventListener("change", function(){ updateTotal(); trackOnce("funnel_rice_selected", {rice_name: i.value}); });
+    });
     updateTotal();
   }
 
@@ -438,7 +456,9 @@
         '<span class="curry-right"><span class="curry-price">'+money(c.price)+'</span><span class="curry-check"></span></span></span>';
       els.curryList.appendChild(row);
     });
-    els.curryList.querySelectorAll("input").forEach(function(i){ i.addEventListener("change", updateTotal); });
+    els.curryList.querySelectorAll("input").forEach(function(i){
+      i.addEventListener("change", function(){ updateTotal(); trackOnce("funnel_curry_selected", {curry_name: i.value}); });
+    });
     updateTotal();
   }
 
@@ -460,7 +480,11 @@
       els.paymentList.appendChild(row);
     });
     els.paymentList.querySelectorAll("input").forEach(function(i){
-      i.addEventListener("change", function(){ showPaymentDetails(i.value); document.getElementById("paymentError").style.display = "none"; });
+      i.addEventListener("change", function(){
+        showPaymentDetails(i.value);
+        document.getElementById("paymentError").style.display = "none";
+        trackOnce("funnel_payment_selected", {payment_method: i.value});
+      });
     });
     if(currentVal && methods.some(function(m){ return m.id === currentVal; })){ showPaymentDetails(currentVal); }
     else { els.paymentDetails.hidden = true; }
@@ -530,7 +554,7 @@
   els.form.addEventListener("submit", function(e){
     e.preventDefault();
     if(submitting) return;
-    if(!validateForm()) return;
+    if(!validateForm()){ track("order_validation_failed"); return; }
     submitting = true;
     document.getElementById("submitBtn").disabled = true;
     document.getElementById("submitBtn").textContent = "Placing order…";
@@ -568,6 +592,11 @@
     }).then(function(order){
       sendOrderEmail(order);
       showConfirmation(order);
+      track("order_placed", {
+        value: order.total, currency: "LKR",
+        payment_method: order.payment.label,
+        item_count: 1 + order.curries.length
+      });
     }).catch(function(err){
       console.error(err);
       alert("Sorry, we couldn't place your order — please check your connection and try again.");
