@@ -254,7 +254,7 @@
     } else {
       var initConfig = firebaseConfig;
       if(typeof FIREBASE_MEASUREMENT_ID !== "undefined" && !isPlaceholder(FIREBASE_MEASUREMENT_ID)){
-        initConfig = Object.assign({}, firebaseConfig, {measurementId: G-VBL90KPW2G});
+        initConfig = Object.assign({}, firebaseConfig, {measurementId: FIREBASE_MEASUREMENT_ID});
       }
       firebase.initializeApp(initConfig);
       db = firebase.firestore();
