@@ -253,7 +253,7 @@
       document.getElementById("connNote").textContent = "Couldn't load required scripts — check your internet connection and reload.";
     } else {
       var initConfig = firebaseConfig;
-      if(typeof FIREBASE_MEASUREMENT_ID !== "undefined" && !isPlaceholder(G-VBL90KPW2G)){
+      if(typeof FIREBASE_MEASUREMENT_ID !== "undefined" && !isPlaceholder(FIREBASE_MEASUREMENT_ID)){
         initConfig = Object.assign({}, firebaseConfig, {measurementId: G-VBL90KPW2G});
       }
       firebase.initializeApp(initConfig);
