@@ -103,6 +103,13 @@
   .pm-grid textarea{min-height:56px; resize:vertical;}
   .pm-actions{display:flex; gap:10px; margin-top:12px; flex-wrap:wrap; align-items:center;}
   .pm-save-msg{font-size:12.5px; color:var(--leaf); font-weight:600; display:none;}
+
+  .perm-check{display:flex; align-items:center; gap:6px; font-size:13px; background:#fff; border:1.5px solid var(--line); border-radius:9px; padding:8px 11px;}
+  .staff-card{border:1px solid var(--line-soft); border-radius:12px; padding:14px 16px; margin-bottom:12px; display:flex; flex-wrap:wrap; gap:12px; align-items:center; justify-content:space-between;}
+  .staff-card .staff-name{font-weight:600; font-size:15px;}
+  .staff-card .staff-perms{font-size:12.5px; color:var(--ink-soft);}
+  .wa-btn{background:#E7EFE3; color:var(--leaf); border:1.5px solid #CFE0C7;}
+  .wa-btn:hover{background:#DAEAD1;}
 </style>
 </head>
 <body>
@@ -123,7 +130,7 @@
     <div class="topbar-inner">
       <div>
         <h1>Kussiya Kitchen <span class="conn-pill" id="connPill">Live</span></h1>
-        <div class="sub">Admin dashboard</div>
+        <div class="sub" id="topbarName">Admin dashboard</div>
       </div>
       <button class="logout-btn" id="logoutBtn">Log out</button>
     </div>
@@ -133,11 +140,23 @@
     <nav class="tabs">
       <button data-tab="menu" class="active">Menu &amp; prices</button>
       <button data-tab="payment">Payment</button>
+      <button data-tab="offers">Offers</button>
       <button data-tab="settings">Settings</button>
       <button data-tab="orders">Orders</button>
+      <button data-tab="staff">Staff</button>
     </nav>
 
     <section id="tab-menu">
+      <div class="panel">
+        <h2>Delivery fee</h2>
+        <p class="hint">A flat fee added to every order's total, shown to customers before checkout. Change it any time — updates live.</p>
+        <div class="settings-grid">
+          <div><label for="deliveryFeeInput">Delivery fee (Rs.)</label><input type="text" inputmode="decimal" id="deliveryFeeInput" placeholder="150"></div>
+        </div>
+        <button class="btn-primary" id="saveDeliveryFeeBtn" type="button" style="margin-top:14px;">Save delivery fee</button>
+        <div class="save-msg" id="deliveryFeeSaveMsg">Saved.</div>
+      </div>
+
       <div class="panel">
         <h2>Rice types</h2>
         <p class="hint">Shown to customers as chip choices with price, in this order. Changes appear on the customer page within a second or two.</p>
@@ -171,6 +190,22 @@
       </div>
     </section>
 
+    <section id="tab-offers" hidden>
+      <div class="panel">
+        <h2>Offers &amp; advertisements</h2>
+        <p class="hint">Shown to customers in a popup when they tap the "Offers" button. Turn on auto-popup to show it automatically once per visit.</p>
+        <div class="checkbox-field"><input type="checkbox" id="offersEnabledToggle"><label for="offersEnabledToggle" style="margin:0;">Auto-popup when the page loads</label></div>
+        <div id="offersAdminList" style="margin-top:14px;"></div>
+        <div class="add-form">
+          <div class="field" style="flex:1 1 100%;"><label for="newOfferTitle">Title</label><input type="text" id="newOfferTitle" placeholder="e.g. Free delivery this week" style="width:100%;"></div>
+          <div class="field" style="flex:1 1 100%;"><label for="newOfferText">Details</label><input type="text" id="newOfferText" placeholder="Short description" style="width:100%;"></div>
+          <div class="field" style="flex:1 1 100%;"><label for="newOfferImage">Image URL (optional)</label><input type="text" id="newOfferImage" placeholder="https://..." style="width:100%;"></div>
+          <div class="field" style="flex:1 1 100%;"><label for="newOfferLink">Link URL (optional)</label><input type="text" id="newOfferLink" placeholder="https://..." style="width:100%;"></div>
+          <button class="btn-primary" id="addOfferBtn" type="button">Add offer</button>
+        </div>
+      </div>
+    </section>
+
     <section id="tab-settings" hidden>
       <div class="panel">
         <h2>Order window &amp; delivery</h2>
@@ -182,6 +217,38 @@
         </div>
         <button class="btn-primary" id="saveSettingsBtn" type="button" style="margin-top:16px;">Save settings</button>
         <div class="save-msg" id="settingsSaveMsg">Saved — customers will see this update within a second or two.</div>
+      </div>
+
+      <div class="panel">
+        <h2>Taking orders</h2>
+        <p class="hint">Turn this off to stop taking orders regardless of the time window — e.g. holidays, weekends. Customers see your message instead of the order form.</p>
+        <div class="checkbox-field"><input type="checkbox" id="storeActiveToggle"><label for="storeActiveToggle" style="margin:0;">Currently taking orders</label></div>
+        <div class="settings-grid" style="margin-top:12px;">
+          <div class="full-row"><label for="storeClosedMessage">Message shown when not taking orders</label><textarea id="storeClosedMessage" placeholder="e.g. Closed for the weekend, back Monday!"></textarea></div>
+        </div>
+        <button class="btn-primary" id="saveStoreActiveBtn" type="button" style="margin-top:14px;">Save</button>
+        <div class="save-msg" id="storeActiveSaveMsg">Saved.</div>
+      </div>
+
+      <div class="panel">
+        <h2>WhatsApp messages</h2>
+        <p class="hint">Used by the "Send WhatsApp" buttons in the Orders tab. Placeholders: {name}, {order_id}, {rice}, {curries}, {total}, {date} — swapped in automatically.</p>
+        <div class="settings-grid">
+          <div class="full-row"><label for="waOrderConfirmedTemplate">Order confirmed message</label><textarea id="waOrderConfirmedTemplate"></textarea></div>
+          <div class="full-row"><label for="waDeliveredTemplate">Delivered message</label><textarea id="waDeliveredTemplate"></textarea></div>
+        </div>
+        <button class="btn-primary" id="saveWaTemplatesBtn" type="button" style="margin-top:14px;">Save messages</button>
+        <div class="save-msg" id="waTemplatesSaveMsg">Saved.</div>
+      </div>
+
+      <div class="panel">
+        <h2>Privacy policy</h2>
+        <p class="hint">Shown to customers in a popup when they tap "Privacy policy" at the bottom of the order page.</p>
+        <div class="settings-grid">
+          <div class="full-row"><label for="privacyPolicyText">Privacy policy text</label><textarea id="privacyPolicyText" style="min-height:110px;"></textarea></div>
+        </div>
+        <button class="btn-primary" id="savePrivacyBtn" type="button" style="margin-top:14px;">Save privacy policy</button>
+        <div class="save-msg" id="privacySaveMsg">Saved.</div>
       </div>
 
       <div class="panel">
@@ -206,11 +273,28 @@
         </div>
         <div class="table-scroll">
           <table class="orders">
-            <thead><tr><th>Order</th><th>Customer</th><th>Rice &amp; curries</th><th>Total</th><th>Payment</th><th>Delivery date</th><th>Placed</th><th>Status</th><th></th></tr></thead>
+            <thead><tr><th>Order</th><th>Customer</th><th>Rice &amp; curries</th><th>Total</th><th>Payment</th><th>Delivery date</th><th>Placed</th><th>Status</th><th>WhatsApp</th><th></th></tr></thead>
             <tbody id="ordersBody"></tbody>
           </table>
         </div>
         <p class="empty-note" id="ordersEmpty" hidden>No orders yet.</p>
+      </div>
+    </section>
+
+    <section id="tab-staff" hidden>
+      <div class="panel">
+        <h2>Staff accounts</h2>
+        <p class="hint">Give staff their own password and tick which parts of this dashboard they can use — e.g. a rider only needs "Orders &amp; WhatsApp". This is the same simple password check as your admin login, not a secure user-account system, so don't reuse sensitive passwords here.</p>
+        <div id="staffList"></div>
+        <div class="add-form" style="align-items:flex-start;">
+          <div class="field"><label for="newStaffName">Name</label><input type="text" id="newStaffName" placeholder="e.g. Kamal (Rider)"></div>
+          <div class="field"><label for="newStaffPassword">Password</label><input type="text" id="newStaffPassword" placeholder="Choose a password"></div>
+          <div class="field" style="flex:1 1 100%;">
+            <label style="margin-bottom:8px;">Access</label>
+            <div id="newStaffPerms" style="display:flex; gap:14px; flex-wrap:wrap;"></div>
+          </div>
+          <button class="btn-primary" id="addStaffBtn" type="button">Add staff member</button>
+        </div>
       </div>
     </section>
   </div>
@@ -265,8 +349,18 @@
   var DEFAULT_SETTINGS = {
     openTime:"06:00", closeTime:"10:30",
     processingText:"Your lunch will be cooked fresh and delivered to your office before 12:30 PM.",
-    adminPassword:"kussiya2026"
+    adminPassword:"kussiya2026",
+    deliveryFee:150,
+    storeActive:true,
+    storeClosedMessage:"We're not taking orders today — check back soon.",
+    privacyPolicyText:"We only use your name, phone number and delivery address to prepare and deliver your order. We don't share your details with anyone outside our kitchen and delivery team.",
+    waOrderConfirmedTemplate:"Hi {name}! Your Kussiya order {order_id} is confirmed \u2014 {rice}, {curries}. Total {total}, delivery on {date}. We'll bring it fresh to you soon!",
+    waDeliveredTemplate:"Hi {name}, your Kussiya lunch has been delivered \u2014 enjoy your meal! Thank you for ordering with us today."
   };
+  var DEFAULT_OFFERS = { enabled:false, items:[] };
+  var DEFAULT_STAFF = { users:[] };
+  var PERMISSION_KEYS = ["menu","payment","settings","offers","orders","staff"];
+  var PERMISSION_LABELS = {menu:"Menu & prices", payment:"Payment", settings:"Settings", offers:"Offers", orders:"Orders & WhatsApp", staff:"Staff management"};
   var DEFAULT_PAYMENT_METHODS = [
     {id:"cod",          label:"Cash on delivery",          active:true,  instructions:"Pay cash to the delivery person when your order arrives.", accountName:"", accountNumber:"", bankName:"", branch:"", qrImageUrl:""},
     {id:"card_delivery",label:"Card on delivery",          active:false, instructions:"Pay by card using our delivery rider's card machine.", accountName:"", accountNumber:"", bankName:"", branch:"", qrImageUrl:""},
@@ -286,9 +380,12 @@
     ensureDoc(db.collection("menu").doc("curries"), {items: DEFAULT_CURRIES});
     ensureDoc(db.collection("settings").doc("main"), DEFAULT_SETTINGS);
     ensureDoc(db.collection("settings").doc("payment"), {methods: DEFAULT_PAYMENT_METHODS});
+    ensureDoc(db.collection("settings").doc("offers"), DEFAULT_OFFERS);
+    ensureDoc(db.collection("settings").doc("staff"), DEFAULT_STAFF);
   }
 
-  var localState = { rice: DEFAULT_RICE, curries: DEFAULT_CURRIES, settings: DEFAULT_SETTINGS, payment: DEFAULT_PAYMENT_METHODS, orders: [] };
+  var localState = { rice: DEFAULT_RICE, curries: DEFAULT_CURRIES, settings: DEFAULT_SETTINGS, payment: DEFAULT_PAYMENT_METHODS, offers: DEFAULT_OFFERS, staff: DEFAULT_STAFF, orders: [] };
+  var session = { role:"super", name:"Super Admin", permissions:null }; // permissions:null means "all access" (super admin)
 
   var loginScreen = document.getElementById("loginScreen");
   var dashboard = document.getElementById("dashboard");
@@ -304,15 +401,30 @@
     var btn = document.getElementById("loginBtn");
     btn.disabled = true;
     btn.textContent = "Checking…";
-    withTimeout(db.collection("settings").doc("main").get(), 10000).then(function(snap){
-      var settings = snap.exists ? Object.assign({}, DEFAULT_SETTINGS, snap.data()) : DEFAULT_SETTINGS;
-      var val = document.getElementById("pwInput").value;
+    var val = document.getElementById("pwInput").value;
+    Promise.all([
+      withTimeout(db.collection("settings").doc("main").get(), 10000),
+      withTimeout(db.collection("settings").doc("staff").get(), 10000)
+    ]).then(function(results){
+      var settingsSnap = results[0], staffSnap = results[1];
+      var settings = settingsSnap.exists ? Object.assign({}, DEFAULT_SETTINGS, settingsSnap.data()) : DEFAULT_SETTINGS;
+      var staff = (staffSnap.exists && staffSnap.data().users) ? staffSnap.data().users : [];
       if(val === settings.adminPassword){
+        session = {role:"super", name:"Super Admin", permissions:null};
         sessionStorage.setItem("kussiya_admin_ok", "1");
+        sessionStorage.setItem("kussiya_admin_session", JSON.stringify(session));
         showDashboard();
-      } else {
-        document.getElementById("pwError").style.display = "block";
+        return;
       }
+      var staffMatch = staff.find(function(u){ return u.password === val; });
+      if(staffMatch){
+        session = {role:"staff", name:staffMatch.name, permissions: staffMatch.permissions || {}};
+        sessionStorage.setItem("kussiya_admin_ok", "1");
+        sessionStorage.setItem("kussiya_admin_session", JSON.stringify(session));
+        showDashboard();
+        return;
+      }
+      document.getElementById("pwError").style.display = "block";
     }).catch(function(err){
       console.error(err);
       if(err && err.code === "permission-denied"){
@@ -329,14 +441,42 @@
   }
   document.getElementById("loginBtn").addEventListener("click", tryLogin);
   document.getElementById("pwInput").addEventListener("keydown", function(e){ if(e.key === "Enter") tryLogin(); });
-  document.getElementById("logoutBtn").addEventListener("click", function(){ sessionStorage.removeItem("kussiya_admin_ok"); location.reload(); });
+  document.getElementById("logoutBtn").addEventListener("click", function(){ sessionStorage.removeItem("kussiya_admin_ok"); sessionStorage.removeItem("kussiya_admin_session"); location.reload(); });
+
+  function can(permKey){
+    if(session.role === "super") return true;
+    return !!(session.permissions && session.permissions[permKey]);
+  }
+
+  function applyPermissionsToUI(){
+    document.getElementById("topbarName").textContent = session.name + (session.role==="super" ? " (Super Admin)" : "");
+    var tabPerm = {menu:"menu", payment:"payment", settings:"settings", orders:"orders", offers:"offers", staff:"staff"};
+    var firstVisible = null;
+    var tabButtons = document.querySelectorAll("nav.tabs button");
+    tabButtons.forEach(function(btn){
+      var t = btn.dataset.tab;
+      var allowed = can(tabPerm[t]);
+      btn.hidden = !allowed;
+      if(allowed && !firstVisible) firstVisible = t;
+    });
+    tabButtons.forEach(function(btn){
+      var t = btn.dataset.tab;
+      var isActive = t === firstVisible;
+      btn.classList.toggle("active", isActive);
+      document.getElementById("tab-"+t).hidden = !isActive;
+    });
+  }
 
   function showDashboard(){
     loginScreen.hidden = true;
     dashboard.hidden = false;
     startListeners();
+    applyPermissionsToUI();
   }
-  if(sessionStorage.getItem("kussiya_admin_ok") === "1"){ showDashboard(); }
+  if(sessionStorage.getItem("kussiya_admin_ok") === "1"){
+    try{ session = JSON.parse(sessionStorage.getItem("kussiya_admin_session")) || session; }catch(e){}
+    showDashboard();
+  }
 
   var listenersStarted = false;
   function startListeners(){
@@ -367,6 +507,16 @@
       localState.orders = snap.docs.map(function(d){ return d.data(); });
       renderOrders();
     }, function(err){ console.error(err); });
+
+    db.collection("settings").doc("offers").onSnapshot(function(snap){
+      localState.offers = snap.exists ? Object.assign({}, DEFAULT_OFFERS, snap.data()) : DEFAULT_OFFERS;
+      renderOffersAdmin();
+    }, function(err){ console.error(err); });
+
+    db.collection("settings").doc("staff").onSnapshot(function(snap){
+      localState.staff = (snap.exists && snap.data().users) ? {users: snap.data().users} : DEFAULT_STAFF;
+      renderStaffAdmin();
+    }, function(err){ console.error(err); });
   }
 
   /* ---------- TABS ---------- */
@@ -375,7 +525,7 @@
     btn.addEventListener("click", function(){
       tabButtons.forEach(function(b){ b.classList.remove("active"); });
       btn.classList.add("active");
-      ["menu","payment","settings","orders"].forEach(function(t){ document.getElementById("tab-"+t).hidden = (t !== btn.dataset.tab); });
+      ["menu","payment","offers","settings","orders","staff"].forEach(function(t){ document.getElementById("tab-"+t).hidden = (t !== btn.dataset.tab); });
     });
   });
 
@@ -517,13 +667,118 @@
     });
   }
 
+  /* ---------- OFFERS ---------- */
+  function renderOffersAdmin(){
+    document.getElementById("offersEnabledToggle").checked = !!localState.offers.enabled;
+    var container = document.getElementById("offersAdminList");
+    container.innerHTML = "";
+    var items = localState.offers.items || [];
+    if(items.length === 0){ container.innerHTML = '<p class="empty-note">No offers yet — add one below.</p>'; return; }
+    items.forEach(function(o){
+      var row = document.createElement("div");
+      row.className = "item-row";
+      row.innerHTML =
+        '<span class="name">'+escapeHtml(o.title||"(untitled)")+'</span>' +
+        (o.active === false ? '<span class="meta inactive">Hidden</span>' : '') +
+        '<button class="icon-btn" data-action="toggle" data-id="'+o.id+'">'+(o.active===false?"Show":"Hide")+'</button>' +
+        '<button class="icon-btn danger" data-action="delete" data-id="'+o.id+'">Remove</button>';
+      container.appendChild(row);
+    });
+    container.querySelectorAll("button").forEach(function(btn){
+      btn.addEventListener("click", function(){
+        var list = (localState.offers.items||[]).slice();
+        var idx = list.findIndex(function(x){ return x.id === btn.dataset.id; });
+        if(idx === -1) return;
+        if(btn.dataset.action === "toggle"){ list[idx] = Object.assign({}, list[idx], {active: list[idx].active === false}); }
+        else if(btn.dataset.action === "delete"){ if(!confirm('Remove this offer?')) return; list.splice(idx,1); }
+        db.collection("settings").doc("offers").set({enabled: localState.offers.enabled, items:list});
+      });
+    });
+  }
+  document.getElementById("offersEnabledToggle").addEventListener("change", function(e){
+    db.collection("settings").doc("offers").set({enabled: e.target.checked, items: localState.offers.items||[]});
+  });
+  document.getElementById("addOfferBtn").addEventListener("click", function(){
+    var titleInput = document.getElementById("newOfferTitle"), textInput = document.getElementById("newOfferText"),
+        imageInput = document.getElementById("newOfferImage"), linkInput = document.getElementById("newOfferLink");
+    var title = titleInput.value.trim();
+    if(!title){ titleInput.focus(); return; }
+    var list = (localState.offers.items||[]).slice();
+    list.push({id: uid("offer"), title:title, text:textInput.value.trim(), imageUrl:imageInput.value.trim(), link:linkInput.value.trim(), active:true});
+    db.collection("settings").doc("offers").set({enabled: localState.offers.enabled, items:list}).then(function(){
+      titleInput.value = ""; textInput.value = ""; imageInput.value = ""; linkInput.value = "";
+    });
+  });
+
+  /* ---------- STAFF ---------- */
+  function renderStaffAdmin(){
+    var container = document.getElementById("staffList");
+    container.innerHTML = "";
+    var users = localState.staff.users || [];
+    if(users.length === 0){ container.innerHTML = '<p class="empty-note">No staff accounts yet.</p>'; }
+    users.forEach(function(u){
+      var card = document.createElement("div");
+      card.className = "staff-card";
+      var permList = PERMISSION_KEYS.filter(function(k){ return u.permissions && u.permissions[k]; }).map(function(k){ return PERMISSION_LABELS[k]; }).join(", ") || "No access ticked";
+      card.innerHTML =
+        '<div><div class="staff-name">'+escapeHtml(u.name)+'</div><div class="staff-perms">'+escapeHtml(permList)+'</div></div>' +
+        '<button class="icon-btn danger" data-id="'+u.id+'">Remove</button>';
+      container.appendChild(card);
+    });
+    container.querySelectorAll("button[data-id]").forEach(function(btn){
+      btn.addEventListener("click", function(){
+        if(!confirm("Remove this staff account?")) return;
+        var list = users.filter(function(u){ return u.id !== btn.dataset.id; });
+        db.collection("settings").doc("staff").set({users:list});
+      });
+    });
+  }
+  (function initNewStaffPerms(){
+    var container = document.getElementById("newStaffPerms");
+    PERMISSION_KEYS.forEach(function(key){
+      var wrap = document.createElement("label");
+      wrap.className = "perm-check";
+      wrap.innerHTML = '<input type="checkbox" data-perm="'+key+'"> '+PERMISSION_LABELS[key];
+      container.appendChild(wrap);
+    });
+  })();
+  document.getElementById("addStaffBtn").addEventListener("click", function(){
+    var nameInput = document.getElementById("newStaffName"), pwInput = document.getElementById("newStaffPassword");
+    var name = nameInput.value.trim(), pw = pwInput.value.trim();
+    if(!name || !pw){ (name?pwInput:nameInput).focus(); return; }
+    var perms = {};
+    document.querySelectorAll('#newStaffPerms input[data-perm]').forEach(function(cb){ perms[cb.dataset.perm] = cb.checked; });
+    var list = (localState.staff.users||[]).slice();
+    list.push({id: uid("staff"), name:name, password:pw, permissions:perms});
+    db.collection("settings").doc("staff").set({users:list}).then(function(){
+      nameInput.value = ""; pwInput.value = "";
+      document.querySelectorAll('#newStaffPerms input[data-perm]').forEach(function(cb){ cb.checked = false; });
+    });
+  });
+
   /* ---------- SETTINGS ---------- */
   function loadSettingsForm(){
     var s = localState.settings;
     document.getElementById("openTime").value = s.openTime;
     document.getElementById("closeTime").value = s.closeTime;
     document.getElementById("processingText").value = s.processingText;
+    document.getElementById("deliveryFeeInput").value = s.deliveryFee != null ? s.deliveryFee : "";
+    document.getElementById("storeActiveToggle").checked = s.storeActive !== false;
+    document.getElementById("storeClosedMessage").value = s.storeClosedMessage || "";
+    document.getElementById("privacyPolicyText").value = s.privacyPolicyText || "";
+    document.getElementById("waOrderConfirmedTemplate").value = s.waOrderConfirmedTemplate || "";
+    document.getElementById("waDeliveredTemplate").value = s.waDeliveredTemplate || "";
   }
+  document.getElementById("saveDeliveryFeeBtn").addEventListener("click", function(){
+    var val = parseFloat(document.getElementById("deliveryFeeInput").value);
+    if(isNaN(val) || val < 0) val = 0;
+    var s = Object.assign({}, localState.settings, {deliveryFee: val});
+    db.collection("settings").doc("main").set(s).then(function(){
+      var msg = document.getElementById("deliveryFeeSaveMsg");
+      msg.style.display = "block";
+      setTimeout(function(){ msg.style.display = "none"; }, 2200);
+    });
+  });
   document.getElementById("saveSettingsBtn").addEventListener("click", function(){
     var s = Object.assign({}, localState.settings);
     s.openTime = document.getElementById("openTime").value || s.openTime;
@@ -533,6 +788,35 @@
       var msg = document.getElementById("settingsSaveMsg");
       msg.style.display = "block";
       setTimeout(function(){ msg.style.display = "none"; }, 2600);
+    });
+  });
+  document.getElementById("saveStoreActiveBtn").addEventListener("click", function(){
+    var s = Object.assign({}, localState.settings, {
+      storeActive: document.getElementById("storeActiveToggle").checked,
+      storeClosedMessage: document.getElementById("storeClosedMessage").value.trim() || localState.settings.storeClosedMessage
+    });
+    db.collection("settings").doc("main").set(s).then(function(){
+      var msg = document.getElementById("storeActiveSaveMsg");
+      msg.style.display = "block"; setTimeout(function(){ msg.style.display = "none"; }, 2200);
+    });
+  });
+  document.getElementById("saveWaTemplatesBtn").addEventListener("click", function(){
+    var s = Object.assign({}, localState.settings, {
+      waOrderConfirmedTemplate: document.getElementById("waOrderConfirmedTemplate").value.trim() || localState.settings.waOrderConfirmedTemplate,
+      waDeliveredTemplate: document.getElementById("waDeliveredTemplate").value.trim() || localState.settings.waDeliveredTemplate
+    });
+    db.collection("settings").doc("main").set(s).then(function(){
+      var msg = document.getElementById("waTemplatesSaveMsg");
+      msg.style.display = "block"; setTimeout(function(){ msg.style.display = "none"; }, 2200);
+    });
+  });
+  document.getElementById("savePrivacyBtn").addEventListener("click", function(){
+    var s = Object.assign({}, localState.settings, {
+      privacyPolicyText: document.getElementById("privacyPolicyText").value.trim() || localState.settings.privacyPolicyText
+    });
+    db.collection("settings").doc("main").set(s).then(function(){
+      var msg = document.getElementById("privacySaveMsg");
+      msg.style.display = "block"; setTimeout(function(){ msg.style.display = "none"; }, 2200);
     });
   });
   document.getElementById("savePasswordBtn").addEventListener("click", function(){
@@ -548,6 +832,28 @@
   });
 
   /* ---------- ORDERS ---------- */
+  function normalizePhone(phone){
+    var digits = String(phone||"").replace(/[^0-9+]/g,"");
+    if(digits.indexOf("+") === 0) digits = digits.slice(1);
+    if(digits.indexOf("0") === 0) digits = "94" + digits.slice(1);
+    else if(digits.indexOf("94") !== 0) digits = "94" + digits;
+    return digits;
+  }
+  function fillTemplate(tpl, o){
+    var curryText = (o.curries||[]).map(function(c){ return typeof c === "string" ? c : c.name; }).join(", ");
+    return String(tpl||"")
+      .replace(/{name}/g, o.name||"")
+      .replace(/{order_id}/g, o.id||"")
+      .replace(/{rice}/g, o.rice||"")
+      .replace(/{curries}/g, curryText)
+      .replace(/{total}/g, money(o.total))
+      .replace(/{date}/g, o.deliveryDate||"");
+  }
+  function waLink(order, which){
+    var tpl = which === "delivered" ? localState.settings.waDeliveredTemplate : localState.settings.waOrderConfirmedTemplate;
+    var msg = fillTemplate(tpl, order);
+    return "https://wa.me/" + normalizePhone(order.phone) + "?text=" + encodeURIComponent(msg);
+  }
   var currentFilterDate = "";
   function renderOrders(){
     var orders = localState.orders.slice();
@@ -570,6 +876,10 @@
         '<td>'+escapeHtml(o.deliveryDate)+'</td>' +
         '<td>'+escapeHtml(new Date(o.placedAt).toLocaleString())+'</td>' +
         '<td><select data-id="'+o.id+'">'+optionsHtml+'</select></td>' +
+        '<td style="white-space:nowrap;">' +
+          '<a class="icon-btn wa-btn" href="'+waLink(o,"confirmed")+'" target="_blank" rel="noopener" style="display:inline-block; margin-bottom:4px;">WA Confirm</a><br>' +
+          '<a class="icon-btn wa-btn" href="'+waLink(o,"delivered")+'" target="_blank" rel="noopener" style="display:inline-block;">WA Delivered</a>' +
+        '</td>' +
         '<td><button class="icon-btn danger" data-del="'+o.id+'">Delete</button></td>';
       body.appendChild(tr);
     });
