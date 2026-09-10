@@ -95,6 +95,7 @@
   .payment-details .pd-row span:first-child{color:var(--turmeric-deep); font-weight:600;}
   .payment-details img.pd-qr{max-width:160px; display:block; margin-top:10px; border-radius:8px; border:1px solid var(--line);}
 
+  .delivery-fee-row{display:flex; justify-content:space-between; padding:10px 22px; font-size:13.5px; color:var(--ink-soft); background:var(--line-soft);}
   .total-bar{position:sticky; bottom:0; left:0; right:0; background:var(--ink); color:#fff; padding:14px 22px; display:flex; align-items:center; justify-content:space-between; border-top:3px solid var(--turmeric);}
   .total-bar .label{font-size:13px; color:#E9D9BE;}
   .total-bar .amount{font-family:'Fraunces', serif; font-size:22px;}
@@ -131,6 +132,22 @@
   footer a{text-decoration:underline;}
 
   @media (max-width:400px){ .hero h1{font-size:32px;} .status-badge .clock{font-size:20px;} }
+
+  .offers-fab{position:fixed; right:18px; bottom:18px; z-index:40; background:var(--turmeric-deep); color:#fff; border:none; border-radius:999px; padding:13px 18px; font-family:inherit; font-size:14px; font-weight:600; box-shadow:0 10px 24px -10px rgba(44,33,24,0.5); cursor:pointer; display:flex; align-items:center; gap:7px;}
+  .offers-fab:hover{background:var(--turmeric);}
+
+  .modal-overlay{position:fixed; inset:0; background:rgba(44,33,24,0.55); z-index:50; display:flex; align-items:center; justify-content:center; padding:20px;}
+  .modal-card{background:var(--paper); border-radius:18px; max-width:440px; width:100%; max-height:85vh; overflow-y:auto; padding:26px 22px; position:relative; box-shadow:0 20px 50px -20px rgba(44,33,24,0.5);}
+  .modal-close{position:absolute; top:14px; right:14px; background:var(--line-soft); border:none; border-radius:50%; width:30px; height:30px; font-size:16px; cursor:pointer; color:var(--ink);}
+  .modal-card h2{font-size:20px; margin-bottom:14px; padding-right:30px;}
+  .offer-item{border:1px solid var(--line-soft); border-radius:12px; overflow:hidden; margin-bottom:14px;}
+  .offer-item:last-child{margin-bottom:0;}
+  .offer-item img{width:100%; display:block; max-height:180px; object-fit:cover;}
+  .offer-item .offer-body{padding:12px 14px;}
+  .offer-item h3{font-size:15.5px; margin-bottom:4px;}
+  .offer-item p{font-size:13.5px; color:var(--ink-soft); margin:0 0 8px;}
+  .offer-item a.offer-link{font-size:13px; font-weight:600; color:var(--paprika-deep); text-decoration:underline;}
+  .privacy-text{font-size:14px; color:var(--ink-soft); white-space:pre-line;}
 </style>
 </head>
 <body>
@@ -202,6 +219,10 @@
       <div class="payment-details" id="paymentDetails" hidden></div>
     </div>
 
+    <div class="delivery-fee-row">
+      <span>Delivery fee</span>
+      <span id="deliveryFeeLine">Rs. 0</span>
+    </div>
     <div class="total-bar">
       <span class="label">Order total</span>
       <span class="amount" id="totalAmount">Rs. 0</span>
@@ -230,7 +251,25 @@
   </div>
 </main>
 
-<footer>Cooked fresh, ordered simply. &middot; <a href="admin.html">Kitchen admin</a></footer>
+<footer>Cooked fresh, ordered simply. &middot; <a href="admin.html">Kitchen admin</a> &middot; <a href="#" id="privacyLink">Privacy policy</a></footer>
+
+<button class="offers-fab" id="offersFab" hidden type="button">🎁 Offers</button>
+
+<div class="modal-overlay" id="offersModal" hidden>
+  <div class="modal-card">
+    <button class="modal-close" id="offersModalClose" type="button">&times;</button>
+    <h2>Offers &amp; updates</h2>
+    <div id="offersModalBody"></div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="privacyModal" hidden>
+  <div class="modal-card">
+    <button class="modal-close" id="privacyModalClose" type="button">&times;</button>
+    <h2>Privacy policy</h2>
+    <p class="privacy-text" id="privacyModalBody"></p>
+  </div>
+</div>
 
 <script src="config.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
@@ -285,8 +324,15 @@
   var DEFAULT_SETTINGS = {
     openTime:"06:00", closeTime:"10:30",
     processingText:"Your lunch will be cooked fresh and delivered to your office before 12:30 PM.",
-    adminPassword:"kussiya2026"
+    adminPassword:"kussiya2026",
+    deliveryFee:150,
+    storeActive:true,
+    storeClosedMessage:"We're not taking orders today — check back soon.",
+    privacyPolicyText:"We only use your name, phone number and delivery address to prepare and deliver your order. We don't share your details with anyone outside our kitchen and delivery team.",
+    waOrderConfirmedTemplate:"Hi {name}! Your Kussiya order {order_id} is confirmed \u2014 {rice}, {curries}. Total {total}, delivery on {date}. We'll bring it fresh to you soon!",
+    waDeliveredTemplate:"Hi {name}, your Kussiya lunch has been delivered \u2014 enjoy your meal! Thank you for ordering with us today."
   };
+  var DEFAULT_OFFERS = { enabled:false, items:[] };
   var DEFAULT_PAYMENT_METHODS = [
     {id:"cod",          label:"Cash on delivery",          active:true,  instructions:"Pay cash to the delivery person when your order arrives.", accountName:"", accountNumber:"", bankName:"", branch:"", qrImageUrl:""},
     {id:"card_delivery",label:"Card on delivery",          active:false, instructions:"Pay by card using our delivery rider's card machine.", accountName:"", accountNumber:"", bankName:"", branch:"", qrImageUrl:""},
@@ -296,7 +342,7 @@
     {id:"card_payment", label:"Card payment",              active:false, instructions:"Online card payment is coming soon — please choose another payment method for now.", accountName:"", accountNumber:"", bankName:"", branch:"", qrImageUrl:""}
   ];
 
-  var state = { rice: DEFAULT_RICE, curries: DEFAULT_CURRIES, settings: DEFAULT_SETTINGS, payment: DEFAULT_PAYMENT_METHODS, ready:false };
+  var state = { rice: DEFAULT_RICE, curries: DEFAULT_CURRIES, settings: DEFAULT_SETTINGS, payment: DEFAULT_PAYMENT_METHODS, offers: DEFAULT_OFFERS, ready:false };
 
   function escapeHtml(str){
     return String(str).replace(/[&<>"']/g, function(ch){ return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[ch]; });
@@ -316,7 +362,8 @@
     riceGrid: document.getElementById("riceGrid"), curryList: document.getElementById("curryList"),
     deliveryDate: document.getElementById("deliveryDate"), riceError: document.getElementById("riceError"),
     totalAmount: document.getElementById("totalAmount"), connNote: document.getElementById("connNote"),
-    paymentList: document.getElementById("paymentList"), paymentDetails: document.getElementById("paymentDetails")
+    paymentList: document.getElementById("paymentList"), paymentDetails: document.getElementById("paymentDetails"),
+    deliveryFeeLine: document.getElementById("deliveryFeeLine")
   };
 
   /* ---------- Ensure Firestore has defaults on first run ---------- */
@@ -330,14 +377,16 @@
     ensureDoc(db.collection("menu").doc("curries"), {items: DEFAULT_CURRIES});
     ensureDoc(db.collection("settings").doc("main"), DEFAULT_SETTINGS);
     ensureDoc(db.collection("settings").doc("payment"), {methods: DEFAULT_PAYMENT_METHODS});
+    ensureDoc(db.collection("settings").doc("offers"), DEFAULT_OFFERS);
   }
 
   /* ---------- Live listeners ---------- */
-  var gotRice = false, gotCurries = false, gotSettings = false, gotPayment = false;
+  var gotRice = false, gotCurries = false, gotSettings = false, gotPayment = false, gotOffers = false;
   function markReady(){
-    if(gotRice && gotCurries && gotSettings && gotPayment && !state.ready){
+    if(gotRice && gotCurries && gotSettings && gotPayment && gotOffers && !state.ready){
       state.ready = true;
       renderRice(); renderCurries(); renderPayment(); tick();
+      maybeAutoPopupOffers();
       tickTimer = setInterval(tick, 1000);
     }
   }
@@ -379,6 +428,13 @@
       if(state.ready) renderPayment();
       markReady();
     }, showConnError);
+
+    db.collection("settings").doc("offers").onSnapshot(function(snap){
+      state.offers = snap.exists ? Object.assign({}, DEFAULT_OFFERS, snap.data()) : DEFAULT_OFFERS;
+      gotOffers = true;
+      if(state.ready) renderOffersModal();
+      markReady();
+    }, showConnError);
   }
 
   /* ---------- Countdown & window state ---------- */
@@ -393,6 +449,19 @@
   }
 
   function tick(){
+    if(state.settings.storeActive === false){
+      els.form.hidden = true;
+      if(!els.confirmCard.hidden) return;
+      els.closedCard.hidden = false;
+      els.label.textContent = "Closed";
+      els.state.textContent = "Not taking orders right now";
+      els.closedTitle.textContent = "We're closed right now";
+      els.closedSub.textContent = state.settings.storeClosedMessage || DEFAULT_SETTINGS.storeClosedMessage;
+      els.clock.textContent = "--:--:--";
+      els.closedClock.hidden = true;
+      return;
+    }
+    els.closedClock.hidden = false;
     var info = getWindowState(); var now = new Date(); var remaining = info.target - now;
     if(info.state === "open"){
       els.label.textContent = "Ordering is open";
@@ -510,7 +579,9 @@
     document.querySelectorAll('input[name="curry"]:checked').forEach(function(el){
       var c = state.curries.find(function(x){ return x.id === el.value; }); if(c) total += Number(c.price||0);
     });
-    els.totalAmount.textContent = money(total);
+    var deliveryFee = Number(state.settings.deliveryFee||0);
+    els.totalAmount.textContent = money(total + deliveryFee);
+    if(els.deliveryFeeLine) els.deliveryFeeLine.textContent = money(deliveryFee);
   }
 
   /* ---------- Validation ---------- */
@@ -562,7 +633,9 @@
     var riceObj = state.rice.find(function(r){ return r.id === riceId; });
     var curryIds = Array.prototype.map.call(document.querySelectorAll('input[name="curry"]:checked'), function(el){ return el.value; });
     var curryObjs = curryIds.map(function(id){ return state.curries.find(function(c){ return c.id === id; }); }).filter(Boolean);
-    var total = (riceObj ? Number(riceObj.price||0) : 0) + curryObjs.reduce(function(s,c){ return s + Number(c.price||0); }, 0);
+    var subtotal = (riceObj ? Number(riceObj.price||0) : 0) + curryObjs.reduce(function(s,c){ return s + Number(c.price||0); }, 0);
+    var deliveryFee = Number(state.settings.deliveryFee||0);
+    var total = subtotal + deliveryFee;
     var paymentId = document.querySelector('input[name="payment"]:checked').value;
     var paymentObj = state.payment.find(function(p){ return p.id === paymentId; }) || {id:paymentId, label:paymentId};
 
@@ -575,6 +648,8 @@
         rice: riceObj ? riceObj.name : riceId,
         ricePrice: riceObj ? riceObj.price : 0,
         curries: curryObjs.map(function(c){ return {name:c.name, price:c.price}; }),
+        subtotal: subtotal,
+        deliveryFee: deliveryFee,
         total: total,
         deliveryDate: document.getElementById("deliveryDate").value,
         placedAt: new Date().toISOString(),
@@ -638,6 +713,7 @@
     [["Name", order.name],["Phone", order.phone],["Address", order.address],
      ["Rice", order.rice + " · " + money(order.ricePrice)],
      ["Curries", order.curries.map(function(c){ return c.name+" ("+money(c.price)+")"; }).join(", ")],
+     ["Delivery fee", money(order.deliveryFee||0)],
      ["Delivery date", order.deliveryDate],
      ["Payment method", order.payment ? order.payment.label : ""]].forEach(function(pair){
       var li = document.createElement("li");
@@ -650,6 +726,58 @@
     list.appendChild(totalLi);
     document.getElementById("processingNote").textContent = state.settings.processingText || DEFAULT_SETTINGS.processingText;
   }
+
+  /* ---------- Offers popup ---------- */
+  var offersFab = document.getElementById("offersFab");
+  var offersModal = document.getElementById("offersModal");
+  var offersModalBody = document.getElementById("offersModalBody");
+
+  function renderOffersModal(){
+    var items = (state.offers.items || []).filter(function(o){ return o.active !== false; });
+    offersFab.hidden = items.length === 0;
+    offersModalBody.innerHTML = "";
+    if(items.length === 0){
+      offersModalBody.innerHTML = '<p class="empty-note">No current offers — check back soon.</p>';
+      return;
+    }
+    items.forEach(function(o){
+      var card = document.createElement("div");
+      card.className = "offer-item";
+      var html = "";
+      if(o.imageUrl) html += '<img src="'+escapeHtml(o.imageUrl)+'" alt="'+escapeHtml(o.title||"Offer")+'">';
+      html += '<div class="offer-body">';
+      if(o.title) html += "<h3>"+escapeHtml(o.title)+"</h3>";
+      if(o.text) html += "<p>"+escapeHtml(o.text)+"</p>";
+      if(o.link) html += '<a class="offer-link" href="'+escapeHtml(o.link)+'" target="_blank" rel="noopener">Learn more</a>';
+      html += "</div>";
+      card.innerHTML = html;
+      offersModalBody.appendChild(card);
+    });
+  }
+
+  function openOffersModal(){ offersModal.hidden = false; track("offers_popup_opened"); }
+  function closeOffersModal(){ offersModal.hidden = true; }
+  offersFab.addEventListener("click", openOffersModal);
+  document.getElementById("offersModalClose").addEventListener("click", closeOffersModal);
+  offersModal.addEventListener("click", function(e){ if(e.target === offersModal) closeOffersModal(); });
+
+  function maybeAutoPopupOffers(){
+    var items = (state.offers.items || []).filter(function(o){ return o.active !== false; });
+    if(!state.offers.enabled || items.length === 0) return;
+    if(sessionStorage.getItem("kussiya_offers_seen")) return;
+    sessionStorage.setItem("kussiya_offers_seen", "1");
+    setTimeout(function(){ openOffersModal(); }, 600);
+  }
+
+  /* ---------- Privacy policy popup ---------- */
+  var privacyModal = document.getElementById("privacyModal");
+  document.getElementById("privacyLink").addEventListener("click", function(e){
+    e.preventDefault();
+    document.getElementById("privacyModalBody").textContent = state.settings.privacyPolicyText || DEFAULT_SETTINGS.privacyPolicyText;
+    privacyModal.hidden = false;
+  });
+  document.getElementById("privacyModalClose").addEventListener("click", function(){ privacyModal.hidden = true; });
+  privacyModal.addEventListener("click", function(e){ if(e.target === privacyModal) privacyModal.hidden = true; });
 
   document.getElementById("newOrderBtn").addEventListener("click", function(){
     els.confirmCard.hidden = true;
