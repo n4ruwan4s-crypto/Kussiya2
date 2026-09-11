@@ -80,6 +80,15 @@
   .tag.veg{background:#E7EFE3; color:var(--leaf);}
   .empty-note{font-size:14px; color:var(--ink-soft); font-style:italic;}
 
+  .meal-card{border:1.5px solid var(--line); border-radius:12px; padding:16px; margin-bottom:14px; background:#FFFDF8;}
+  .meal-card:last-child{margin-bottom:0;}
+  .meal-card-head{display:flex; align-items:center; justify-content:space-between; gap:10px; margin-bottom:12px;}
+  .meal-card-head h3{font-size:15.5px; font-family:'Fraunces', serif; font-weight:600;}
+  .remove-meal-btn{background:none; border:1.5px solid #E9C9BE; border-radius:8px; padding:6px 11px; font-size:12.5px; cursor:pointer; color:var(--paprika-deep); font-family:inherit;}
+  .remove-meal-btn:hover{background:#F7E4DE;}
+  .meal-subtotal{margin-top:12px; font-size:13.5px; font-weight:600; color:var(--turmeric-deep); text-align:right;}
+  .meal-card .curry-list{margin-top:14px;}
+
   .pm-row{position:relative;}
   .pm-row input{position:absolute; opacity:0; width:1px; height:1px;}
   .pm-box{display:flex; align-items:center; justify-content:space-between; gap:10px; padding:12px 14px; border:1.5px solid var(--line); border-radius:10px; background:#fff; cursor:pointer;}
@@ -188,22 +197,14 @@
 
     <div class="section">
       <span class="step-no">Step 2</span>
-      <h2>Choose your rice</h2>
-      <p class="hint">Pick one.</p>
-      <div class="rice-grid" id="riceGrid"></div>
-      <p class="field-error" id="riceError">Please choose a rice type.</p>
+      <h2>Your lunches</h2>
+      <p class="hint">Ordering for more than one person? Add another lunch — each can have its own rice and curries.</p>
+      <div id="mealsContainer"></div>
+      <button type="button" class="btn-secondary" id="addMealBtn" style="margin-top:4px;">+ Add another lunch</button>
     </div>
 
     <div class="section">
       <span class="step-no">Step 3</span>
-      <h2>Choose your curries</h2>
-      <p class="hint">Pick as many as you like.</p>
-      <div class="curry-list" id="curryList"></div>
-      <p class="field-error" id="curryError">Please choose at least one curry.</p>
-    </div>
-
-    <div class="section">
-      <span class="step-no">Step 4</span>
       <h2>Delivery date</h2>
       <p class="hint">Today, or pick a later date to schedule ahead.</p>
       <input type="date" id="deliveryDate" name="deliveryDate">
@@ -211,7 +212,7 @@
     </div>
 
     <div class="section">
-      <span class="step-no">Step 5</span>
+      <span class="step-no">Step 4</span>
       <h2>Payment method</h2>
       <p class="hint">Choose how you'd like to pay.</p>
       <div class="curry-list" id="paymentList"></div>
@@ -329,7 +330,7 @@
     storeActive:true,
     storeClosedMessage:"We're not taking orders today — check back soon.",
     privacyPolicyText:"We only use your name, phone number and delivery address to prepare and deliver your order. We don't share your details with anyone outside our kitchen and delivery team.",
-    waOrderConfirmedTemplate:"Hi {name}! Your Kussiya order {order_id} is confirmed \u2014 {rice}, {curries}. Total {total}, delivery on {date}. We'll bring it fresh to you soon!",
+    waOrderConfirmedTemplate:"Hi {name}! Your Kussiya order {order_id} is confirmed \u2014 {meals}. Total {total}, delivery on {date}. We'll bring it fresh to you soon!",
     waDeliveredTemplate:"Hi {name}, your Kussiya lunch has been delivered \u2014 enjoy your meal! Thank you for ordering with us today."
   };
   var DEFAULT_OFFERS = { enabled:false, items:[] };
@@ -359,8 +360,8 @@
     form: document.getElementById("orderForm"), closedCard: document.getElementById("closedCard"),
     closedTitle: document.getElementById("closedTitle"), closedSub: document.getElementById("closedSub"),
     closedClock: document.getElementById("closedClock"), confirmCard: document.getElementById("confirmCard"),
-    riceGrid: document.getElementById("riceGrid"), curryList: document.getElementById("curryList"),
-    deliveryDate: document.getElementById("deliveryDate"), riceError: document.getElementById("riceError"),
+    deliveryDate: document.getElementById("deliveryDate"), mealsContainer: document.getElementById("mealsContainer"),
+    addMealBtn: document.getElementById("addMealBtn"),
     totalAmount: document.getElementById("totalAmount"), connNote: document.getElementById("connNote"),
     paymentList: document.getElementById("paymentList"), paymentDetails: document.getElementById("paymentDetails"),
     deliveryFeeLine: document.getElementById("deliveryFeeLine")
@@ -385,7 +386,7 @@
   function markReady(){
     if(gotRice && gotCurries && gotSettings && gotPayment && gotOffers && !state.ready){
       state.ready = true;
-      renderRice(); renderCurries(); renderPayment(); tick();
+      renderMeals(); renderPayment(); tick();
       maybeAutoPopupOffers();
       tickTimer = setInterval(tick, 1000);
     }
@@ -405,14 +406,14 @@
     db.collection("menu").doc("rice").onSnapshot(function(snap){
       state.rice = (snap.exists && snap.data().items) ? snap.data().items : DEFAULT_RICE;
       gotRice = true;
-      if(state.ready) renderRice();
+      if(state.ready) renderMeals();
       markReady();
     }, showConnError);
 
     db.collection("menu").doc("curries").onSnapshot(function(snap){
       state.curries = (snap.exists && snap.data().items) ? snap.data().items : DEFAULT_CURRIES;
       gotCurries = true;
-      if(state.ready) renderCurries();
+      if(state.ready) renderMeals();
       markReady();
     }, showConnError);
 
@@ -491,44 +492,106 @@
   }
 
   /* ---------- Rendering ---------- */
-  function renderRice(){
+  /* ---------- Multi-meal builder ---------- */
+  var mealsState = [{id: newMealId()}];
+  var mealSelections = {};
+  function newMealId(){ return "meal-" + Date.now().toString(36) + Math.random().toString(36).slice(2,6); }
+
+  function buildRiceHtml(mealId, selectedId){
     var rice = state.rice.filter(function(r){ return r.active !== false; });
-    var currentChecked = document.querySelector('input[name="rice"]:checked');
-    var currentVal = currentChecked ? currentChecked.value : null;
-    els.riceGrid.innerHTML = "";
-    if(rice.length === 0){ els.riceGrid.innerHTML = '<p class="empty-note">No rice options available right now.</p>'; return; }
-    rice.forEach(function(r){
-      var wrap = document.createElement("label");
-      wrap.className = "chip";
-      wrap.innerHTML = '<input type="radio" name="rice" value="'+r.id+'" '+(r.id===currentVal?"checked":"")+'>' +
-        '<span><span class="rice-dot" style="background:'+r.hex+'"></span>'+escapeHtml(r.name)+' <span class="chip-price">'+money(r.price)+'</span></span>';
-      els.riceGrid.appendChild(wrap);
+    if(rice.length === 0) return '<p class="empty-note">No rice options available right now.</p>';
+    return rice.map(function(r){
+      return '<label class="chip"><input type="radio" name="rice-'+mealId+'" value="'+r.id+'" '+(r.id===selectedId?"checked":"")+'>' +
+        '<span><span class="rice-dot" style="background:'+r.hex+'"></span>'+escapeHtml(r.name)+' <span class="chip-price">'+money(r.price)+'</span></span></label>';
+    }).join("");
+  }
+
+  function buildCurryHtml(mealId, selectedIds){
+    var curries = state.curries.filter(function(c){ return c.active !== false; });
+    if(curries.length === 0) return '<p class="empty-note">No curries available right now.</p>';
+    return curries.map(function(c){
+      var checked = selectedIds.indexOf(c.id) > -1;
+      return '<label class="curry-row"><input type="checkbox" name="curry-'+mealId+'" value="'+c.id+'" '+(checked?"checked":"")+'>' +
+        '<span class="curry-box"><span class="curry-name">'+escapeHtml(c.name)+
+        ' <span class="tag '+(c.hasMeat?"meat":"veg")+'">'+(c.hasMeat?"Contains meat":"Veg")+'</span></span>' +
+        '<span class="curry-right"><span class="curry-price">'+money(c.price)+'</span><span class="curry-check"></span></span></span></label>';
+    }).join("");
+  }
+
+  function renderMeals(){
+    var container = els.mealsContainer;
+    container.innerHTML = "";
+    mealsState.forEach(function(meal, idx){
+      var sel = mealSelections[meal.id] || {rice:null, curries:[]};
+      var card = document.createElement("div");
+      card.className = "meal-card";
+      card.dataset.mealId = meal.id;
+      card.innerHTML =
+        '<div class="meal-card-head"><h3>Lunch '+(idx+1)+'</h3>' +
+        (mealsState.length > 1 ? '<button type="button" class="remove-meal-btn" data-remove-meal="'+meal.id+'">Remove</button>' : '') +
+        '</div>' +
+        '<div class="rice-grid" data-role="riceGrid">'+buildRiceHtml(meal.id, sel.rice)+'</div>' +
+        '<p class="field-error" data-role="riceError">Please choose a rice type.</p>' +
+        '<div class="curry-list" data-role="curryList">'+buildCurryHtml(meal.id, sel.curries)+'</div>' +
+        '<p class="field-error" data-role="curryError">Please choose at least one curry.</p>' +
+        '<div class="meal-subtotal" data-role="mealSubtotal">Lunch subtotal: Rs. 0</div>';
+      container.appendChild(card);
     });
-    els.riceGrid.querySelectorAll("input").forEach(function(i){
-      i.addEventListener("change", function(){ updateTotal(); trackOnce("funnel_rice_selected", {rice_name: i.value}); });
-    });
+    wireMealEvents();
     updateTotal();
   }
 
-  function renderCurries(){
-    var curries = state.curries.filter(function(c){ return c.active !== false; });
-    var checkedIds = Array.prototype.map.call(document.querySelectorAll('input[name="curry"]:checked'), function(el){ return el.value; });
-    els.curryList.innerHTML = "";
-    if(curries.length === 0){ els.curryList.innerHTML = '<p class="empty-note">No curries available right now.</p>'; return; }
-    curries.forEach(function(c){
-      var row = document.createElement("label");
-      row.className = "curry-row";
-      row.innerHTML = '<input type="checkbox" name="curry" value="'+c.id+'" '+(checkedIds.indexOf(c.id)>-1?"checked":"")+'>' +
-        '<span class="curry-box"><span class="curry-name">'+escapeHtml(c.name)+
-        ' <span class="tag '+(c.hasMeat?"meat":"veg")+'">'+(c.hasMeat?"Contains meat":"Veg")+'</span></span>' +
-        '<span class="curry-right"><span class="curry-price">'+money(c.price)+'</span><span class="curry-check"></span></span></span>';
-      els.curryList.appendChild(row);
+  function updateMealSubtotal(card){
+    var total = 0;
+    var riceChecked = card.querySelector('input[type="radio"]:checked');
+    if(riceChecked){ var r = state.rice.find(function(x){ return x.id === riceChecked.value; }); if(r) total += Number(r.price||0); }
+    card.querySelectorAll('input[type="checkbox"]:checked').forEach(function(el){
+      var c = state.curries.find(function(x){ return x.id === el.value; }); if(c) total += Number(c.price||0);
     });
-    els.curryList.querySelectorAll("input").forEach(function(i){
-      i.addEventListener("change", function(){ updateTotal(); trackOnce("funnel_curry_selected", {curry_name: i.value}); });
-    });
-    updateTotal();
+    var subEl = card.querySelector('[data-role="mealSubtotal"]');
+    if(subEl) subEl.textContent = "Lunch subtotal: " + money(total);
   }
+
+  function wireMealEvents(){
+    els.mealsContainer.querySelectorAll(".meal-card").forEach(function(card){
+      var mealId = card.dataset.mealId;
+      if(!mealSelections[mealId]) mealSelections[mealId] = {rice:null, curries:[]};
+      card.querySelectorAll('input[type="radio"]').forEach(function(r){
+        r.addEventListener("change", function(){
+          mealSelections[mealId].rice = r.value;
+          var err = card.querySelector('[data-role="riceError"]'); if(err) err.style.display = "none";
+          updateMealSubtotal(card); updateTotal();
+          trackOnce("funnel_rice_selected", {rice_name: r.value});
+        });
+      });
+      card.querySelectorAll('input[type="checkbox"]').forEach(function(c){
+        c.addEventListener("change", function(){
+          mealSelections[mealId].curries = Array.prototype.map.call(card.querySelectorAll('input[type="checkbox"]:checked'), function(el){ return el.value; });
+          var err = card.querySelector('[data-role="curryError"]'); if(err) err.style.display = "none";
+          updateMealSubtotal(card); updateTotal();
+          trackOnce("funnel_curry_selected", {curry_name: c.value});
+        });
+      });
+      var removeBtn = card.querySelector('[data-remove-meal]');
+      if(removeBtn) removeBtn.addEventListener("click", function(){ removeMeal(mealId); });
+      updateMealSubtotal(card);
+    });
+  }
+
+  function addMeal(){
+    var id = newMealId();
+    mealsState.push({id:id});
+    mealSelections[id] = {rice:null, curries:[]};
+    renderMeals();
+    track("meal_added", {meal_count: mealsState.length});
+  }
+  function removeMeal(id){
+    if(mealsState.length <= 1) return;
+    mealsState = mealsState.filter(function(m){ return m.id !== id; });
+    delete mealSelections[id];
+    renderMeals();
+  }
+  els.addMealBtn.addEventListener("click", addMeal);
 
   function renderPayment(){
     var methods = state.payment.filter(function(m){ return m.active !== false; });
@@ -574,10 +637,12 @@
 
   function updateTotal(){
     var total = 0;
-    var riceChecked = document.querySelector('input[name="rice"]:checked');
-    if(riceChecked){ var r = state.rice.find(function(x){ return x.id === riceChecked.value; }); if(r) total += Number(r.price||0); }
-    document.querySelectorAll('input[name="curry"]:checked').forEach(function(el){
-      var c = state.curries.find(function(x){ return x.id === el.value; }); if(c) total += Number(c.price||0);
+    els.mealsContainer.querySelectorAll(".meal-card").forEach(function(card){
+      var riceChecked = card.querySelector('input[type="radio"]:checked');
+      if(riceChecked){ var r = state.rice.find(function(x){ return x.id === riceChecked.value; }); if(r) total += Number(r.price||0); }
+      card.querySelectorAll('input[type="checkbox"]:checked').forEach(function(el){
+        var c = state.curries.find(function(x){ return x.id === el.value; }); if(c) total += Number(c.price||0);
+      });
     });
     var deliveryFee = Number(state.settings.deliveryFee||0);
     els.totalAmount.textContent = money(total + deliveryFee);
@@ -593,12 +658,18 @@
      [address, address.value.trim().length>0],[date, !!date.value]].forEach(function(pair){
       if(pair[1]){ pair[0].classList.remove("invalid"); } else { pair[0].classList.add("invalid"); valid = false; }
     });
-    var riceChosen = document.querySelector('input[name="rice"]:checked');
-    els.riceError.style.display = riceChosen ? "none" : "block";
-    if(!riceChosen) valid = false;
-    var curryChosen = document.querySelectorAll('input[name="curry"]:checked').length > 0;
-    document.getElementById("curryError").style.display = curryChosen ? "none" : "block";
-    if(!curryChosen) valid = false;
+    var mealsValid = true;
+    els.mealsContainer.querySelectorAll(".meal-card").forEach(function(card){
+      var riceChosen = card.querySelector('input[type="radio"]:checked');
+      var riceErr = card.querySelector('[data-role="riceError"]');
+      if(riceErr) riceErr.style.display = riceChosen ? "none" : "block";
+      if(!riceChosen) mealsValid = false;
+      var curryChosen = card.querySelectorAll('input[type="checkbox"]:checked').length > 0;
+      var curryErr = card.querySelector('[data-role="curryError"]');
+      if(curryErr) curryErr.style.display = curryChosen ? "none" : "block";
+      if(!curryChosen) mealsValid = false;
+    });
+    if(!mealsValid) valid = false;
     var paymentChosen = document.querySelector('input[name="payment"]:checked');
     document.getElementById("paymentError").style.display = paymentChosen ? "none" : "block";
     if(!paymentChosen) valid = false;
@@ -629,11 +700,22 @@
     document.getElementById("submitBtn").disabled = true;
     document.getElementById("submitBtn").textContent = "Placing order…";
 
-    var riceId = document.querySelector('input[name="rice"]:checked').value;
-    var riceObj = state.rice.find(function(r){ return r.id === riceId; });
-    var curryIds = Array.prototype.map.call(document.querySelectorAll('input[name="curry"]:checked'), function(el){ return el.value; });
-    var curryObjs = curryIds.map(function(id){ return state.curries.find(function(c){ return c.id === id; }); }).filter(Boolean);
-    var subtotal = (riceObj ? Number(riceObj.price||0) : 0) + curryObjs.reduce(function(s,c){ return s + Number(c.price||0); }, 0);
+    var meals = [];
+    els.mealsContainer.querySelectorAll(".meal-card").forEach(function(card, idx){
+      var riceChecked = card.querySelector('input[type="radio"]:checked');
+      var riceObj = riceChecked ? state.rice.find(function(x){ return x.id === riceChecked.value; }) : null;
+      var curryIds = Array.prototype.map.call(card.querySelectorAll('input[type="checkbox"]:checked'), function(el){ return el.value; });
+      var curryObjs = curryIds.map(function(id){ return state.curries.find(function(c){ return c.id === id; }); }).filter(Boolean);
+      var mealSubtotal = (riceObj ? Number(riceObj.price||0) : 0) + curryObjs.reduce(function(s,c){ return s + Number(c.price||0); }, 0);
+      meals.push({
+        mealNumber: idx + 1,
+        rice: riceObj ? riceObj.name : "",
+        ricePrice: riceObj ? riceObj.price : 0,
+        curries: curryObjs.map(function(c){ return {name:c.name, price:c.price}; }),
+        mealSubtotal: mealSubtotal
+      });
+    });
+    var subtotal = meals.reduce(function(s,m){ return s + m.mealSubtotal; }, 0);
     var deliveryFee = Number(state.settings.deliveryFee||0);
     var total = subtotal + deliveryFee;
     var paymentId = document.querySelector('input[name="payment"]:checked').value;
@@ -645,9 +727,8 @@
         name: document.getElementById("custName").value.trim(),
         phone: document.getElementById("custPhone").value.trim(),
         address: document.getElementById("custAddress").value.trim(),
-        rice: riceObj ? riceObj.name : riceId,
-        ricePrice: riceObj ? riceObj.price : 0,
-        curries: curryObjs.map(function(c){ return {name:c.name, price:c.price}; }),
+        meals: meals,
+        mealsCount: meals.length,
         subtotal: subtotal,
         deliveryFee: deliveryFee,
         total: total,
@@ -669,7 +750,7 @@
       track("order_placed", {
         value: order.total, currency: "LKR",
         payment_method: order.payment.label,
-        item_count: 1 + order.curries.length
+        item_count: order.meals.length
       });
     }).catch(function(err){
       console.error(err);
@@ -688,9 +769,16 @@
       statusEl.textContent = "Kitchen notification isn't configured yet — the order is saved, but please also call to confirm.";
       return;
     }
+    var mealsSummary = order.meals.map(function(m, i){
+      var curryText = m.curries.map(function(c){ return c.name; }).join(", ");
+      return "Lunch " + (i+1) + ": " + m.rice + (curryText ? " + " + curryText : "");
+    }).join(" | ");
     var params = {
       order_id: order.id, customer_name: order.name, phone: order.phone, address: order.address,
-      rice: order.rice, curries: order.curries.map(function(c){ return c.name; }).join(", "),
+      meals_summary: mealsSummary, meals_count: order.meals.length,
+      rice: order.meals[0] ? order.meals[0].rice : "",
+      curries: order.meals[0] ? order.meals[0].curries.map(function(c){ return c.name; }).join(", ") : "",
+      delivery_fee: money(order.deliveryFee||0),
       delivery_date: order.deliveryDate, total: money(order.total),
       placed_at: new Date(order.placedAt).toLocaleString(),
       payment_method: order.payment ? order.payment.label : ""
@@ -710,12 +798,15 @@
     document.getElementById("confirmOrderId").textContent = "Order " + order.id;
     var list = document.getElementById("confirmList");
     list.innerHTML = "";
-    [["Name", order.name],["Phone", order.phone],["Address", order.address],
-     ["Rice", order.rice + " · " + money(order.ricePrice)],
-     ["Curries", order.curries.map(function(c){ return c.name+" ("+money(c.price)+")"; }).join(", ")],
-     ["Delivery fee", money(order.deliveryFee||0)],
-     ["Delivery date", order.deliveryDate],
-     ["Payment method", order.payment ? order.payment.label : ""]].forEach(function(pair){
+    var rows = [["Name", order.name],["Phone", order.phone],["Address", order.address]];
+    order.meals.forEach(function(m, i){
+      var curryText = m.curries.map(function(c){ return c.name+" ("+money(c.price)+")"; }).join(", ");
+      rows.push(["Lunch " + (i+1), m.rice + " · " + money(m.ricePrice) + (curryText ? " + " + curryText : "")]);
+    });
+    rows.push(["Delivery fee", money(order.deliveryFee||0)]);
+    rows.push(["Delivery date", order.deliveryDate]);
+    rows.push(["Payment method", order.payment ? order.payment.label : ""]);
+    rows.forEach(function(pair){
       var li = document.createElement("li");
       li.innerHTML = "<span>"+escapeHtml(pair[0])+"</span><span>"+escapeHtml(pair[1])+"</span>";
       list.appendChild(li);
@@ -783,7 +874,9 @@
     els.confirmCard.hidden = true;
     els.form.reset();
     els.paymentDetails.hidden = true;
-    renderRice(); renderCurries(); renderPayment(); tick();
+    mealsState = [{id: newMealId()}];
+    mealSelections = {};
+    renderMeals(); renderPayment(); tick();
   });
 
 })();
