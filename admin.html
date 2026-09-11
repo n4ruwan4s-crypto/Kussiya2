@@ -199,7 +199,15 @@
         <div class="add-form">
           <div class="field" style="flex:1 1 100%;"><label for="newOfferTitle">Title</label><input type="text" id="newOfferTitle" placeholder="e.g. Free delivery this week" style="width:100%;"></div>
           <div class="field" style="flex:1 1 100%;"><label for="newOfferText">Details</label><input type="text" id="newOfferText" placeholder="Short description" style="width:100%;"></div>
-          <div class="field" style="flex:1 1 100%;"><label for="newOfferImage">Image URL (optional)</label><input type="text" id="newOfferImage" placeholder="https://..." style="width:100%;"></div>
+          <div class="field" style="flex:1 1 100%;">
+            <label for="newOfferImage">Image (optional)</label>
+            <input type="text" id="newOfferImage" placeholder="https://..." style="width:100%;">
+            <div style="margin-top:8px; display:flex; align-items:center; gap:10px; flex-wrap:wrap;">
+              <input type="file" id="newOfferImageFile" accept="image/*" style="max-width:220px;">
+              <span class="hint" id="newOfferImageStatus" style="margin:0;">or paste a link above, or upload a photo here</span>
+            </div>
+            <img id="newOfferImagePreview" hidden style="margin-top:8px; max-height:120px; border-radius:8px; display:block;">
+          </div>
           <div class="field" style="flex:1 1 100%;"><label for="newOfferLink">Link URL (optional)</label><input type="text" id="newOfferLink" placeholder="https://..." style="width:100%;"></div>
           <button class="btn-primary" id="addOfferBtn" type="button">Add offer</button>
         </div>
@@ -303,6 +311,7 @@
 <script src="config.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-storage-compat.js"></script>
 <script>
 (function(){
   "use strict";
@@ -321,6 +330,7 @@
   }
 
   var db = null;
+  var storage = null;
   try{
     if(typeof firebaseConfig === "undefined" || Object.keys(firebaseConfig).some(function(k){ return isPlaceholder(firebaseConfig[k]); })){
       showInitError("config.js still has placeholder Firebase values (something starting with \"YOUR_\"). Open config.js on GitHub, paste in your real Firebase project settings, then reload this page.");
@@ -329,6 +339,7 @@
     } else {
       firebase.initializeApp(firebaseConfig);
       db = firebase.firestore();
+      try{ storage = firebase.storage(); }catch(e){ console.error("Storage init failed:", e); }
     }
   }catch(e){
     console.error(e);
@@ -698,6 +709,47 @@
   document.getElementById("offersEnabledToggle").addEventListener("change", function(e){
     db.collection("settings").doc("offers").set({enabled: e.target.checked, items: localState.offers.items||[]});
   });
+  document.getElementById("newOfferImageFile").addEventListener("change", function(e){
+    var file = e.target.files && e.target.files[0];
+    var statusEl = document.getElementById("newOfferImageStatus");
+    var urlInput = document.getElementById("newOfferImage");
+    var previewEl = document.getElementById("newOfferImagePreview");
+    if(!file) return;
+    if(!storage){
+      statusEl.textContent = "Photo upload isn't available — Firebase Storage didn't start. You can still paste an image link above instead.";
+      e.target.value = "";
+      return;
+    }
+    if(!/^image\//.test(file.type)){
+      statusEl.textContent = "That's not an image file — please choose a jpg, png, or similar.";
+      e.target.value = "";
+      return;
+    }
+    if(file.size > 5 * 1024 * 1024){
+      statusEl.textContent = "That photo is over 5MB — please choose a smaller one.";
+      e.target.value = "";
+      return;
+    }
+    statusEl.textContent = "Uploading…";
+    var safeName = file.name.replace(/[^a-zA-Z0-9._-]/g, "_");
+    var path = "offer-images/" + Date.now() + "_" + safeName;
+    storage.ref().child(path).put(file).then(function(snapshot){
+      return snapshot.ref.getDownloadURL();
+    }).then(function(url){
+      urlInput.value = url;
+      previewEl.src = url;
+      previewEl.hidden = false;
+      statusEl.textContent = "Photo uploaded ✓";
+    }).catch(function(err){
+      console.error(err);
+      if(err && err.code === "storage/unauthorized"){
+        statusEl.textContent = "Upload blocked — Firebase Storage rules need to allow this. See the setup note below.";
+      } else {
+        statusEl.textContent = "Upload failed — check your connection and try again, or paste an image link above instead.";
+      }
+    });
+  });
+
   document.getElementById("addOfferBtn").addEventListener("click", function(){
     var titleInput = document.getElementById("newOfferTitle"), textInput = document.getElementById("newOfferText"),
         imageInput = document.getElementById("newOfferImage"), linkInput = document.getElementById("newOfferLink");
@@ -707,6 +759,9 @@
     list.push({id: uid("offer"), title:title, text:textInput.value.trim(), imageUrl:imageInput.value.trim(), link:linkInput.value.trim(), active:true});
     db.collection("settings").doc("offers").set({enabled: localState.offers.enabled, items:list}).then(function(){
       titleInput.value = ""; textInput.value = ""; imageInput.value = ""; linkInput.value = "";
+      document.getElementById("newOfferImageFile").value = "";
+      document.getElementById("newOfferImageStatus").textContent = "or paste a link above, or upload a photo here";
+      document.getElementById("newOfferImagePreview").hidden = true;
     });
   });
 
