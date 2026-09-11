@@ -386,7 +386,7 @@
   function markReady(){
     if(gotRice && gotCurries && gotSettings && gotPayment && gotOffers && !state.ready){
       state.ready = true;
-      renderMeals(); renderPayment(); tick();
+      renderMeals(); renderPayment(); renderOffersModal(); tick();
       maybeAutoPopupOffers();
       tickTimer = setInterval(tick, 1000);
     }
