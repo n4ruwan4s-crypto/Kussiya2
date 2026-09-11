@@ -232,7 +232,7 @@
 
       <div class="panel">
         <h2>WhatsApp messages</h2>
-        <p class="hint">Used by the "Send WhatsApp" buttons in the Orders tab. Placeholders: {name}, {order_id}, {rice}, {curries}, {total}, {date} — swapped in automatically.</p>
+        <p class="hint">Used by the "Send WhatsApp" buttons in the Orders tab. Placeholders: {name}, {order_id}, {meals} (lists every lunch in the order), {total}, {date} — swapped in automatically. ({rice} and {curries} still work but only cover the first lunch — use {meals} for orders with more than one.)</p>
         <div class="settings-grid">
           <div class="full-row"><label for="waOrderConfirmedTemplate">Order confirmed message</label><textarea id="waOrderConfirmedTemplate"></textarea></div>
           <div class="full-row"><label for="waDeliveredTemplate">Delivered message</label><textarea id="waDeliveredTemplate"></textarea></div>
@@ -354,7 +354,7 @@
     storeActive:true,
     storeClosedMessage:"We're not taking orders today — check back soon.",
     privacyPolicyText:"We only use your name, phone number and delivery address to prepare and deliver your order. We don't share your details with anyone outside our kitchen and delivery team.",
-    waOrderConfirmedTemplate:"Hi {name}! Your Kussiya order {order_id} is confirmed \u2014 {rice}, {curries}. Total {total}, delivery on {date}. We'll bring it fresh to you soon!",
+    waOrderConfirmedTemplate:"Hi {name}! Your Kussiya order {order_id} is confirmed \u2014 {meals}. Total {total}, delivery on {date}. We'll bring it fresh to you soon!",
     waDeliveredTemplate:"Hi {name}, your Kussiya lunch has been delivered \u2014 enjoy your meal! Thank you for ordering with us today."
   };
   var DEFAULT_OFFERS = { enabled:false, items:[] };
@@ -839,12 +839,29 @@
     else if(digits.indexOf("94") !== 0) digits = "94" + digits;
     return digits;
   }
+  function getOrderMeals(o){
+    if(o.meals && o.meals.length) return o.meals;
+    // legacy single-meal orders (before the multi-lunch update)
+    if(o.rice || o.curries){
+      return [{ rice: o.rice||"", ricePrice: o.ricePrice||0, curries: o.curries||[] }];
+    }
+    return [];
+  }
+  function mealsSummaryText(o, sep){
+    return getOrderMeals(o).map(function(m, i){
+      var curryText = (m.curries||[]).map(function(c){ return typeof c === "string" ? c : c.name; }).join(", ");
+      return "Lunch " + (i+1) + ": " + m.rice + (curryText ? " + " + curryText : "");
+    }).join(sep || " | ");
+  }
   function fillTemplate(tpl, o){
-    var curryText = (o.curries||[]).map(function(c){ return typeof c === "string" ? c : c.name; }).join(", ");
+    var meals = getOrderMeals(o);
+    var first = meals[0] || {rice:"", curries:[]};
+    var curryText = (first.curries||[]).map(function(c){ return typeof c === "string" ? c : c.name; }).join(", ");
     return String(tpl||"")
       .replace(/{name}/g, o.name||"")
       .replace(/{order_id}/g, o.id||"")
-      .replace(/{rice}/g, o.rice||"")
+      .replace(/{meals}/g, mealsSummaryText(o, "; "))
+      .replace(/{rice}/g, first.rice||"")
       .replace(/{curries}/g, curryText)
       .replace(/{total}/g, money(o.total))
       .replace(/{date}/g, o.deliveryDate||"");
@@ -866,12 +883,16 @@
     orders.forEach(function(o){
       var tr = document.createElement("tr");
       var optionsHtml = statuses.map(function(st){ return '<option value="'+st+'" '+(o.status===st?"selected":"")+'>'+st+'</option>'; }).join("");
-      var curryText = (o.curries||[]).map(function(c){ return typeof c === "string" ? c : c.name; }).join(", ");
+      var mealsHtml = getOrderMeals(o).map(function(m, i){
+        var curryText = (m.curries||[]).map(function(c){ return typeof c === "string" ? c : c.name; }).join(", ");
+        return '<div style="margin-bottom:4px;"><strong>L'+(i+1)+':</strong> '+escapeHtml(m.rice||"")+
+          '<br><span style="color:var(--ink-soft); font-size:12px;">'+escapeHtml(curryText)+'</span></div>';
+      }).join("");
       tr.innerHTML =
-        '<td><span class="order-id">'+escapeHtml(o.id)+'</span></td>' +
+        '<td><span class="order-id">'+escapeHtml(o.id)+'</span>'+(o.mealsCount>1?' <span class="pm-badge on">'+o.mealsCount+' lunches</span>':'')+'</td>' +
         '<td>'+escapeHtml(o.name)+'<br><span style="color:var(--ink-soft); font-size:12px;">'+escapeHtml(o.phone)+'</span><br><span style="color:var(--ink-soft); font-size:12px;">'+escapeHtml(o.address)+'</span></td>' +
-        '<td>'+escapeHtml(o.rice)+'<br><span style="color:var(--ink-soft); font-size:12px;">'+escapeHtml(curryText)+'</span></td>' +
-        '<td class="order-total">'+money(o.total)+'</td>' +
+        '<td>'+mealsHtml+'</td>' +
+        '<td class="order-total">'+money(o.total)+(o.deliveryFee?'<br><span style="color:var(--ink-soft); font-size:11.5px; font-weight:400;">incl. delivery '+money(o.deliveryFee)+'</span>':'')+'</td>' +
         '<td>'+escapeHtml(o.payment ? o.payment.label : "—")+'</td>' +
         '<td>'+escapeHtml(o.deliveryDate)+'</td>' +
         '<td>'+escapeHtml(new Date(o.placedAt).toLocaleString())+'</td>' +
@@ -899,11 +920,11 @@
   document.getElementById("filterDate").addEventListener("change", function(e){ currentFilterDate = e.target.value; renderOrders(); });
   document.getElementById("clearFilterBtn").addEventListener("click", function(){ currentFilterDate = ""; document.getElementById("filterDate").value = ""; renderOrders(); });
   document.getElementById("exportBtn").addEventListener("click", function(){
-    var headers = ["Order ID","Name","Phone","Address","Rice","Curries","Total","Payment method","Delivery date","Placed at","Status"];
+    var headers = ["Order ID","Name","Phone","Address","Lunches","Meals","Subtotal","Delivery fee","Total","Payment method","Delivery date","Placed at","Status"];
     var rows = localState.orders.map(function(o){
-      var curryText = (o.curries||[]).map(function(c){ return typeof c === "string" ? c : c.name; }).join("; ");
       var paymentText = o.payment ? o.payment.label : "";
-      return [o.id,o.name,o.phone,o.address,o.rice,curryText,o.total,paymentText,o.deliveryDate,o.placedAt,o.status]
+      var meals = getOrderMeals(o);
+      return [o.id,o.name,o.phone,o.address,meals.length,mealsSummaryText(o," / "),(o.subtotal!=null?o.subtotal:o.total),(o.deliveryFee||0),o.total,paymentText,o.deliveryDate,o.placedAt,o.status]
         .map(function(v){ return '"'+String(v).replace(/"/g,'""')+'"'; }).join(",");
     });
     var csv = headers.join(",") + "\n" + rows.join("\n");
